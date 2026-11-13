@@ -12,6 +12,7 @@ import {
   SearchIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
+import { PaginationFooter } from "@/components/pagination";
 import { cn } from "@/lib/cn";
 import {
   INITIAL_COHORTS,
@@ -235,6 +236,8 @@ function ChildCard({ child, cohort }: ChildCardProps) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 export function ChildrenLedger() {
   const children = useChildren();
   const cohorts = useCohorts();
@@ -245,10 +248,19 @@ export function ChildrenLedger() {
   const [query, setQuery] = useState(urlQ);
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [currentPage, setCurrentPage] = useState(1);
 
   if (urlQ !== prevUrlQ) {
     setPrevUrlQ(urlQ);
     setQuery(urlQ);
+  }
+
+  const [prevQuery, setPrevQuery] = useState(query);
+  const [prevStatusFilter, setPrevStatusFilter] = useState(statusFilter);
+  if (query !== prevQuery || statusFilter !== prevStatusFilter) {
+    setPrevQuery(query);
+    setPrevStatusFilter(statusFilter);
+    setCurrentPage(1);
   }
 
   const search = query.trim().toLowerCase();
@@ -272,6 +284,17 @@ export function ChildrenLedger() {
       );
     });
   }, [children, statusFilter, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedChildren = useMemo(() => {
+    const startIndex = (safePage - 1) * PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  const startEntry = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endEntry = Math.min(safePage * PAGE_SIZE, filtered.length);
 
   const counts = useMemo(() => {
     const map: Record<Status, number> = {
@@ -371,12 +394,34 @@ export function ChildrenLedger() {
                 Child Roster
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Showing <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">{filtered.length}</span> of <span className="tabular-nums">{children.length}</span> children
+                Showing{" "}
+                <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                  {startEntry}–{endEntry}
+                </span>{" "}
+                of{" "}
+                <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">
+                  {filtered.length}
+                </span>{" "}
+                children
                 {statusFilter !== "all" && (
                   <>
                     {" "}
-                    · filtered by <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    · filtered by{" "}
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
                       {STATUS_META[statusFilter].label}
+                    </span>
+                  </>
+                )}
+                {totalPages > 1 && (
+                  <>
+                    {" "}
+                    · Page{" "}
+                    <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                      {safePage}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                      {totalPages}
                     </span>
                   </>
                 )}
@@ -536,7 +581,7 @@ export function ChildrenLedger() {
           </div>
         ) : viewMode === "cards" ? (
           <div className="grid gap-3.5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
-            {filtered.map((child) => {
+            {paginatedChildren.map((child) => {
               const cohort = cohortById(cohorts, child.classId);
 
               return <ChildCard key={child.id} child={child} cohort={cohort} />;
@@ -586,7 +631,7 @@ export function ChildrenLedger() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filtered.map((child) => {
+                {paginatedChildren.map((child) => {
                   const cohort = cohortById(cohorts, child.classId);
                   const guardian = child.guardians[0];
                   const hasCareNotes = child.allergies || child.medicalNotes;
@@ -670,6 +715,20 @@ export function ChildrenLedger() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {filtered.length > 0 && (
+          <PaginationFooter
+            startEntry={startEntry}
+            endEntry={endEntry}
+            totalEntries={filtered.length}
+            singularLabel="child"
+            pluralLabel="children"
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            ariaLabel="Children roster pagination"
+          />
         )}
       </section>
 

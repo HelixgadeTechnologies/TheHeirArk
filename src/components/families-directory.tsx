@@ -13,8 +13,11 @@ import {
   SearchIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
+import { PaginationFooter } from "@/components/pagination";
 import { cn } from "@/lib/cn";
 import { useChildren, useCohorts, type Child, type Guardian } from "@/lib/children-store";
+
+const PAGE_SIZE = 10;
 
 type Family = {
   familyName: string;
@@ -36,6 +39,13 @@ export function FamiliesDirectory() {
   const cohorts = useCohorts();
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setCurrentPage(1);
+  }
 
   const families = useMemo<Family[]>(() => {
     const familyMap = new Map<string, Family>();
@@ -84,6 +94,17 @@ export function FamiliesDirectory() {
       return matchName || matchGuardian || matchChild;
     });
   }, [families, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredFamilies.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedFamilies = useMemo(() => {
+    const startIndex = (safePage - 1) * PAGE_SIZE;
+    return filteredFamilies.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filteredFamilies, safePage]);
+
+  const startEntry = filteredFamilies.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endEntry = Math.min(safePage * PAGE_SIZE, filteredFamilies.length);
 
   const totalGuardians = useMemo(() => {
     let count = 0;
@@ -177,7 +198,28 @@ export function FamiliesDirectory() {
                 Registered Households
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Showing <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">{filteredFamilies.length}</span> of <span className="tabular-nums">{families.length}</span> families
+                Showing{" "}
+                <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                  {startEntry}–{endEntry}
+                </span>{" "}
+                of{" "}
+                <span className="tabular-nums font-semibold text-slate-800 dark:text-slate-200">
+                  {filteredFamilies.length}
+                </span>{" "}
+                {filteredFamilies.length === 1 ? "family" : "families"}
+                {totalPages > 1 && (
+                  <>
+                    {" "}
+                    · Page{" "}
+                    <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                      {safePage}
+                    </span>{" "}
+                    of{" "}
+                    <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">
+                      {totalPages}
+                    </span>
+                  </>
+                )}
               </p>
             </div>
 
@@ -267,7 +309,7 @@ export function FamiliesDirectory() {
           </div>
         ) : viewMode === "cards" ? (
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
-            {filteredFamilies.map((family) => (
+            {paginatedFamilies.map((family) => (
               <article
                 key={family.familyName}
                 className="flex flex-col gap-4 rounded-2xl border border-slate-200/90 bg-white p-4.5 transition-colors hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-slate-700"
@@ -394,7 +436,7 @@ export function FamiliesDirectory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {filteredFamilies.map((family) => {
+                {paginatedFamilies.map((family) => {
                   const hasRestricted = family.guardians.some((g) => !g.authorized);
 
                   return (
@@ -506,6 +548,20 @@ export function FamiliesDirectory() {
               </tbody>
             </table>
           </div>
+        )}
+
+        {filteredFamilies.length > 0 && (
+          <PaginationFooter
+            startEntry={startEntry}
+            endEntry={endEntry}
+            totalEntries={filteredFamilies.length}
+            singularLabel="family"
+            pluralLabel="families"
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            ariaLabel="Families directory pagination"
+          />
         )}
       </section>
     </div>
