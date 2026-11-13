@@ -12,44 +12,19 @@ import {
   ShieldCheckIcon,
   SmileIcon,
 } from "@/components/icons";
-import { cn } from "@/lib/cn";
-import { DEMO_USERS, useAuth } from "@/lib/auth-context";
-import { ROLES, type Role } from "@/lib/navigation";
-
-const roleDescriptions: Record<Role, { badge: string; desc: string; sample: string }> = {
-  Admin: {
-    badge: "bg-indigo-50 text-indigo-700 ring-indigo-500/20 dark:bg-indigo-500/10 dark:text-indigo-300",
-    desc: "Full administrative access, finance ledger, attendance logs, and class configurations.",
-    sample: "admin@theark.church",
-  },
-  Leader: {
-    badge: "bg-emerald-50 text-emerald-700 ring-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300",
-    desc: "Ministry operations, volunteer coverage, family directory, and kiosk safety monitoring.",
-    sample: "leader@theark.church",
-  },
-  Teacher: {
-    badge: "bg-amber-50 text-amber-700 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300",
-    desc: "Kingdom Kids classroom roster, check-in verification, allergy alerts, and attendance.",
-    sample: "teacher@theark.church",
-  },
-};
+import { useAuth } from "@/lib/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginAs } = useAuth();
+  const { login } = useAuth();
 
-  const [email, setEmail] = useState("admin@theark.church");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [forgotOpen, setForgotOpen] = useState(false);
-
-  const activeSelectedRole: Role =
-    (Object.keys(DEMO_USERS) as Role[]).find(
-      (r) => DEMO_USERS[r].email.toLowerCase() === email.toLowerCase(),
-    ) ?? "Admin";
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -65,19 +40,6 @@ export default function LoginPage() {
         setLoading(false);
       }
     }, 350);
-  }
-
-  function handleQuickRoleSelect(role: Role) {
-    const target = DEMO_USERS[role];
-    setEmail(target.email);
-    setPassword("password123");
-    setError(null);
-    setLoading(true);
-
-    setTimeout(() => {
-      loginAs(role);
-      router.push("/");
-    }, 250);
   }
 
   return (
@@ -105,78 +67,15 @@ export default function LoginPage() {
             <SmileIcon className="h-8 w-8" />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
-            Sign in to The Ark
+            Sign in to TheHeirsArk
           </h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
             Children&apos;s Church Ministry & Dashboard Portal
           </p>
         </div>
 
-        {/* Quick Demo Role Selector */}
-        <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white/80 p-3.5 shadow-xs backdrop-blur-md dark:border-slate-800/90 dark:bg-slate-900/80">
-          <div className="flex items-center justify-between px-1">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              One-Click Role Sign-In
-            </span>
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              Instant login
-            </span>
-          </div>
-
-          <div className="mt-2.5 grid grid-cols-3 gap-2">
-            {ROLES.map((r) => {
-              const u = DEMO_USERS[r];
-              const isSelected = email.toLowerCase() === u.email.toLowerCase();
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => handleQuickRoleSelect(r)}
-                  className={cn(
-                    "flex flex-col items-center justify-center rounded-xl p-2.5 text-center transition-all focus-visible:ring-2 focus-visible:ring-indigo-500 active:scale-[0.98]",
-                    isSelected
-                      ? "border border-indigo-500/40 bg-indigo-50/70 shadow-2xs dark:border-indigo-400/40 dark:bg-indigo-500/15"
-                      : "border border-slate-200/70 bg-white hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-800/60 dark:hover:bg-slate-800",
-                  )}
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-bold text-white shadow-2xs">
-                    {u.avatarInitials}
-                  </span>
-                  <span className="mt-1.5 block text-xs font-bold text-slate-900 dark:text-slate-100">
-                    {r}
-                  </span>
-                  <span className="truncate text-[10px] text-slate-500 dark:text-slate-400">
-                    {u.name.split(" ")[0]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {roleDescriptions[activeSelectedRole] && (
-            <div className="mt-2.5 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-800/40 dark:text-slate-400">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    "rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1",
-                    roleDescriptions[activeSelectedRole].badge,
-                  )}
-                >
-                  {activeSelectedRole} Workspace
-                </span>
-                <span className="truncate text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                  {roleDescriptions[activeSelectedRole].sample}
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] leading-relaxed">
-                {roleDescriptions[activeSelectedRole].desc}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Main Login Form Card */}
-        <div className="mt-4 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm dark:border-slate-800/90 dark:bg-slate-900">
+        {/* Email & Password Login Form Card */}
+        <div className="mt-6 rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm dark:border-slate-800/90 dark:bg-slate-900">
           {error && (
             <div
               role="alert"
@@ -206,7 +105,7 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@theark.church"
+                  placeholder="name@theheirsark.church"
                   className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3.5 text-sm font-medium text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
                 />
               </div>
@@ -287,7 +186,7 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Verifying credentials…</span>
+                  <span>Signing in…</span>
                 </>
               ) : (
                 <>
@@ -298,20 +197,20 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Active Demo Role Details Callout */}
+          {/* Unified Sign-in Notice */}
           <div className="mt-5 rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-3 text-xs dark:border-slate-800 dark:bg-slate-800/40">
             <p className="font-semibold text-slate-700 dark:text-slate-300">
               Single unified sign-in:
             </p>
             <p className="mt-0.5 text-slate-500 dark:text-slate-400">
-              Admins, Department Leaders, and Sunday School Teachers log in from this same page and automatically route to their role dashboard.
+              Admins, Department Leaders, and Sunday School Teachers log in with their ministry email address and are automatically routed to their role dashboard.
             </p>
           </div>
         </div>
 
         {/* Footer info */}
         <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          The Ark Children&apos;s Church Ministry System · &ldquo;Train up a child in the way he should go&rdquo;
+          TheHeirsArk Children&apos;s Church Ministry System · &ldquo;Train up a child in the way he should go&rdquo;
         </p>
       </div>
 
@@ -330,8 +229,8 @@ export default function LoginPage() {
               For church security and child protection standards, password resets are handled directly by your ministry director. Please contact:
             </p>
             <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-              <p className="font-semibold">Grace Community Admin Desk</p>
-              <p className="text-indigo-600 dark:text-indigo-400">admin@theark.church</p>
+              <p className="font-semibold">TheHeirsArk Admin Desk</p>
+              <p className="text-indigo-600 dark:text-indigo-400">admin@theheirsark.church</p>
               <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Sunday morning desk: Room 101</p>
             </div>
             <button
