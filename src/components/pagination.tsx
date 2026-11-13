@@ -163,3 +163,4 @@ export function PaginationFooter({
     </div>
   );
 }
+
