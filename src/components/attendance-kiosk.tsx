@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircleIcon,
   CloseIcon,
+  GridIcon,
   KioskIcon,
+  ListIcon,
   LogOutIcon,
   PhoneIcon,
   SearchIcon,
@@ -238,6 +240,7 @@ export function AttendanceKiosk() {
   const [filter, setFilter] = useState<Filter>("all");
   const [checkoutChild, setCheckoutChild] = useState<Child | null>(null);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
 
   const counts = useMemo(() => {
     let present = 0;
@@ -481,9 +484,52 @@ export function AttendanceKiosk() {
                 </button>
               )}
             </div>
-            <p className="text-xs font-medium text-slate-500 sm:w-36 sm:text-right dark:text-slate-400">
-              {filtered.length} of {children.length} children
-            </p>
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <p className="text-xs font-medium text-slate-500 sm:text-right dark:text-slate-400">
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                  {filtered.length}
+                </span>{" "}
+                of <span className="tabular-nums">{children.length}</span> children
+              </p>
+
+              {/* View Mode Toggle: Cards / List */}
+              <div
+                role="group"
+                aria-label="View layout"
+                className="inline-flex h-9 shrink-0 items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5 dark:border-slate-700/80 dark:bg-slate-800/80"
+              >
+                <button
+                  type="button"
+                  onClick={() => setViewMode("cards")}
+                  aria-pressed={viewMode === "cards"}
+                  aria-label="Cards view"
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                    viewMode === "cards"
+                      ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  )}
+                >
+                  <GridIcon className="h-4 w-4" />
+                  <span>Cards</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  aria-pressed={viewMode === "list"}
+                  aria-label="List view"
+                  className={cn(
+                    "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                    viewMode === "list"
+                      ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                      : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                  )}
+                >
+                  <ListIcon className="h-4 w-4" />
+                  <span>List</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
@@ -537,7 +583,7 @@ export function AttendanceKiosk() {
             Clear search
           </button>
         </div>
-      ) : (
+      ) : viewMode === "cards" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((child) => (
             <ChildCard
@@ -547,6 +593,189 @@ export function AttendanceKiosk() {
               onCheckOut={setCheckoutChild}
             />
           ))}
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xs dark:border-slate-800/90 dark:bg-slate-900/90">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Child
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Class Cohort
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Guardians & Contact
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Arrival / Pick-up Info
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filtered.map((child) => {
+                  const status = statusMeta[child.status];
+                  const primary = child.guardians[0];
+
+                  return (
+                    <tr
+                      key={child.id}
+                      className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold",
+                              child.tone,
+                            )}
+                          >
+                            {initials(child.name)}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {child.name}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                              <span>{child.age} yrs</span>
+                              {child.note && (
+                                <>
+                                  <span>·</span>
+                                  <span className="font-medium text-amber-700 dark:text-amber-400">
+                                    Allergy: {child.note}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                            status.badge,
+                          )}
+                        >
+                          {status.label}
+                        </span>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {child.className}
+                        </span>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5 text-xs">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {primary.name}
+                          <span className="font-normal text-slate-500 dark:text-slate-400">
+                            {" "}
+                            ({primary.relation})
+                          </span>
+                        </p>
+                        {primary.phone && (
+                          <a
+                            href={`tel:${primary.phone}`}
+                            className="inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+                          >
+                            <PhoneIcon className="h-3 w-3 text-slate-400" />
+                            <span className="tabular-nums">{primary.phone}</span>
+                          </a>
+                        )}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5 text-xs text-slate-600 dark:text-slate-300">
+                        {child.status === "expected" && (
+                          <span>
+                            Awaiting drop-off by{" "}
+                            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+                              {primary.name}
+                            </strong>
+                          </span>
+                        )}
+                        {child.status === "checked-in" && (
+                          <span>
+                            In at{" "}
+                            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+                              {child.arrivedAt}
+                            </strong>{" "}
+                            · Drop-off: {child.dropOffBy}
+                          </span>
+                        )}
+                        {child.status === "checked-out" && (
+                          <span>
+                            In {child.arrivedAt} → Out{" "}
+                            <strong className="font-semibold text-slate-800 dark:text-slate-200">
+                              {child.signedOutAt}
+                            </strong>{" "}
+                            · Pick-up: {child.pickedUpBy}
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right">
+                        {child.status === "expected" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCheckIn(child)}
+                            aria-label={`Check in ${child.name}`}
+                            className="inline-flex h-9 touch-manipulation items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-emerald-500 active:scale-[0.99]"
+                          >
+                            <KioskIcon className="h-4 w-4" />
+                            Check in
+                          </button>
+                        ) : child.status === "checked-in" ? (
+                          <button
+                            type="button"
+                            onClick={() => setCheckoutChild(child)}
+                            aria-label={`Check out ${child.name}`}
+                            className="inline-flex h-9 touch-manipulation items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-500 active:scale-[0.99]"
+                          >
+                            <LogOutIcon className="h-4 w-4" />
+                            Check out
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                            <CheckCircleIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            Signed out ({child.signedOutAt})
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
