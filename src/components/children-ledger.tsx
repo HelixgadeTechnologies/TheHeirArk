@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangleIcon,
   CloseIcon,
+  GridIcon,
+  ListIcon,
   PlusIcon,
   SearchIcon,
   ShieldCheckIcon,
@@ -242,6 +244,7 @@ export function ChildrenLedger() {
   const [prevUrlQ, setPrevUrlQ] = useState(urlQ);
   const [query, setQuery] = useState(urlQ);
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
 
   if (urlQ !== prevUrlQ) {
     setPrevUrlQ(urlQ);
@@ -362,7 +365,7 @@ export function ChildrenLedger() {
         className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white dark:border-slate-800/90 dark:bg-slate-900/90"
       >
         <div className="border-b border-slate-100 p-4 sm:p-5 dark:border-slate-800">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 id="children-history-title" className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 Child Roster
@@ -378,6 +381,44 @@ export function ChildrenLedger() {
                   </>
                 )}
               </p>
+            </div>
+
+            {/* View Mode Toggle: Cards / List */}
+            <div
+              role="group"
+              aria-label="View layout"
+              className="inline-flex h-9 shrink-0 items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5 dark:border-slate-700/80 dark:bg-slate-800/80"
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode("cards")}
+                aria-pressed={viewMode === "cards"}
+                aria-label="Cards view"
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                  viewMode === "cards"
+                    ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                )}
+              >
+                <GridIcon className="h-4 w-4" />
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+                aria-label="List view"
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                  viewMode === "list"
+                    ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                )}
+              >
+                <ListIcon className="h-4 w-4" />
+                <span>List</span>
+              </button>
             </div>
           </div>
 
@@ -493,13 +534,141 @@ export function ChildrenLedger() {
               </button>
             )}
           </div>
-        ) : (
+        ) : viewMode === "cards" ? (
           <div className="grid gap-3.5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
             {filtered.map((child) => {
               const cohort = cohortById(cohorts, child.classId);
 
               return <ChildCard key={child.id} child={child} cohort={cohort} />;
             })}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Child
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Class Cohort
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Primary Guardian & Contact
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Care & Allergies
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Service Log
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filtered.map((child) => {
+                  const cohort = cohortById(cohorts, child.classId);
+                  const guardian = child.guardians[0];
+                  const hasCareNotes = child.allergies || child.medicalNotes;
+
+                  return (
+                    <tr
+                      key={child.id}
+                      className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={cn(
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ring-1 ring-inset ring-black/5 dark:ring-white/10",
+                              cohort?.tone.icon ??
+                                "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                            )}
+                          >
+                            {initials(child.name)}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {child.name}
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                              {child.age} yrs old
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <StatusBadge status={child.status} />
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {cohort?.name ?? "Unassigned"}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-xs">
+                        <p className="font-semibold text-slate-900 dark:text-slate-100">
+                          {guardian?.name ?? "Guardian"}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          {guardian ? `${guardian.relation} · ${guardian.phone}` : "No contact"}
+                        </p>
+                      </td>
+                      <td className="max-w-[220px] px-4 py-3 text-xs">
+                        {hasCareNotes ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
+                            <AlertTriangleIcon className="h-3 w-3 shrink-0 text-amber-600" />
+                            <span className="truncate">
+                              {child.allergies || child.medicalNotes}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500">None flagged</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-right text-xs tabular-nums text-slate-500 dark:text-slate-400">
+                        {child.status === "checked-in" ? (
+                          <span>
+                            In at{" "}
+                            <strong className="font-semibold text-slate-900 dark:text-slate-100">
+                              {child.arrivedAt}
+                            </strong>
+                          </span>
+                        ) : child.status === "checked-out" ? (
+                          <span>
+                            Out at{" "}
+                            <strong className="font-semibold text-slate-900 dark:text-slate-100">
+                              {child.signedOutAt}
+                            </strong>
+                          </span>
+                        ) : (
+                          <span>Expected</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>

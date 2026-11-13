@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   CloseIcon,
   FamilyIcon,
+  GridIcon,
+  ListIcon,
   PhoneIcon,
   PlusIcon,
   SearchIcon,
@@ -33,6 +35,7 @@ export function FamiliesDirectory() {
   const children = useChildren();
   const cohorts = useCohorts();
   const [query, setQuery] = useState("");
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
 
   const families = useMemo<Family[]>(() => {
     const familyMap = new Map<string, Family>();
@@ -168,7 +171,7 @@ export function FamiliesDirectory() {
       {/* Directory Search & List */}
       <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white dark:border-slate-800/90 dark:bg-slate-900/90">
         <div className="border-b border-slate-100 p-4 sm:p-5 dark:border-slate-800">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 Registered Households
@@ -176,6 +179,44 @@ export function FamiliesDirectory() {
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Showing <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200">{filteredFamilies.length}</span> of <span className="tabular-nums">{families.length}</span> families
               </p>
+            </div>
+
+            {/* View Mode Toggle: Cards / List */}
+            <div
+              role="group"
+              aria-label="View layout"
+              className="inline-flex h-9 shrink-0 items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5 dark:border-slate-700/80 dark:bg-slate-800/80"
+            >
+              <button
+                type="button"
+                onClick={() => setViewMode("cards")}
+                aria-pressed={viewMode === "cards"}
+                aria-label="Cards view"
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                  viewMode === "cards"
+                    ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                )}
+              >
+                <GridIcon className="h-4 w-4" />
+                <span>Cards</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+                aria-label="List view"
+                className={cn(
+                  "flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-all focus-visible:ring-2 focus-visible:ring-indigo-500",
+                  viewMode === "list"
+                    ? "bg-white text-slate-900 shadow-2xs dark:bg-slate-900 dark:text-white"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white",
+                )}
+              >
+                <ListIcon className="h-4 w-4" />
+                <span>List</span>
+              </button>
             </div>
           </div>
 
@@ -224,7 +265,7 @@ export function FamiliesDirectory() {
               </button>
             )}
           </div>
-        ) : (
+        ) : viewMode === "cards" ? (
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
             {filteredFamilies.map((family) => (
               <article
@@ -314,6 +355,156 @@ export function FamiliesDirectory() {
                 </div>
               </article>
             ))}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Household
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Primary Contact
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Guardians & Pick-Up Rights
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Enrolled Children
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-4 py-3 text-right text-xs font-semibold text-slate-700 dark:text-slate-300"
+                  >
+                    Safety Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredFamilies.map((family) => {
+                  const hasRestricted = family.guardians.some((g) => !g.authorized);
+
+                  return (
+                    <tr
+                      key={family.familyName}
+                      className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
+                    >
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-50 font-bold text-xs text-indigo-700 ring-1 ring-indigo-500/15 dark:bg-indigo-500/10 dark:text-indigo-300">
+                            {initials(family.familyName)}
+                          </span>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                              {family.familyName}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {family.children.length} {family.children.length === 1 ? "child" : "children"} enrolled
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        {family.primaryPhone ? (
+                          <a
+                            href={`tel:${family.primaryPhone}`}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-700 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                          >
+                            <PhoneIcon className="h-3 w-3 text-slate-400" />
+                            {family.primaryPhone}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-400">—</span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3.5">
+                        <ul className="flex flex-col gap-1.5">
+                          {family.guardians.map((guardian) => (
+                            <li
+                              key={guardian.name}
+                              className="inline-flex items-center gap-2 text-xs"
+                            >
+                              <span
+                                className={cn(
+                                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                                  guardian.authorized ? "bg-emerald-500" : "bg-rose-500",
+                                )}
+                              />
+                              <span className="font-medium text-slate-800 dark:text-slate-200">
+                                {guardian.name}
+                              </span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                ({guardian.relation})
+                              </span>
+                              {guardian.authorized ? (
+                                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[9px] font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                  Auth
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9px] font-semibold text-rose-700 ring-1 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
+                                  Restricted
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+
+                      <td className="px-4 py-3.5">
+                        <div className="flex flex-wrap gap-1.5">
+                          {family.children.map((child) => {
+                            const cohort = cohorts.find((c) => c.id === child.classId);
+                            return (
+                              <span
+                                key={child.id}
+                                className="inline-flex items-center gap-1 rounded-lg bg-slate-50 px-2 py-1 text-xs text-slate-700 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:text-slate-300 dark:ring-slate-700/80"
+                              >
+                                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                                  {child.name}
+                                </span>
+                                <span className="text-slate-400">·</span>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                  {cohort?.name || `${child.age}y`}
+                                </span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </td>
+
+                      <td className="whitespace-nowrap px-4 py-3.5 text-right">
+                        {hasRestricted ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 ring-1 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
+                            <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+                            Restricted Guardian
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                            <ShieldCheckIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                            Clear for Release
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
