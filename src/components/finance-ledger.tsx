@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircleIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ChildrenIcon,
   CloseIcon,
   FinanceIcon,
@@ -360,6 +362,21 @@ function CategoryGlyph({ category, className }: { category: Category; className?
   return <GiftIcon className={className} />;
 }
 
+const PAGE_SIZE = 10;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  if (current <= 3) {
+    return [1, 2, 3, 4, "...", total];
+  }
+  if (current >= total - 2) {
+    return [1, "...", total - 3, total - 2, total - 1, total];
+  }
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
+
 type NewTransaction = {
   category: Category;
   amount: number;
@@ -375,6 +392,7 @@ export function FinanceLedger() {
   const [methodFilter, setMethodFilter] = useState<Method | "all">("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [entryOpen, setEntryOpen] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
@@ -448,6 +466,18 @@ export function FinanceLedger() {
   );
 
   const filteredTotal = filtered.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedTransactions = useMemo(() => {
+    const startIndex = (safePage - 1) * PAGE_SIZE;
+    return filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  const startEntry = filtered.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endEntry = Math.min(safePage * PAGE_SIZE, filtered.length);
+
   const offering = totals.byCategory["sunday-offering"];
   const hasFilters =
     categoryFilter !== "all" ||
@@ -491,6 +521,7 @@ export function FinanceLedger() {
     setMethodFilter("all");
     setMonthFilter("all");
     setQuery("");
+    setCurrentPage(1);
   }
 
   function saveTransaction(input: NewTransaction) {
@@ -506,6 +537,7 @@ export function FinanceLedger() {
     };
 
     setTransactions((current) => [transaction, ...current]);
+    setCurrentPage(1);
     setEntryOpen(false);
     setNotice({
       message: `${formatCurrency(transaction.amount)} ${CATEGORY_META[transaction.category].label.toLowerCase()} recorded`,
@@ -516,57 +548,54 @@ export function FinanceLedger() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      <div className="space-y-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-6">
+      <div className="space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Admin · Finance
-            </p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Finance</h1>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Log Sunday offerings, teacher dues, donations, and contributions. Every entry updates
-              the category totals and collection history instantly.
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+              Finance & Giving Ledger
+            </h1>
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Track Sunday offerings, teacher dues, donations, and special project contributions. Instant audit trail and category breakdowns.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-              <ShieldCheckIcon className="h-4 w-4 text-emerald-500" />
-              Admin-only ledger
+            <span className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <ShieldCheckIcon className="h-4 w-4 text-emerald-600" />
+              Audited ministry ledger
             </span>
             <button
               type="button"
               onClick={() => setEntryOpen(true)}
-              className="inline-flex h-12 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 active:scale-[0.99] sm:w-auto"
+              className="inline-flex h-11 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 active:scale-[0.99] sm:w-auto"
             >
               <PlusIcon className="h-4 w-4" />
-              Add transaction
+              Record contribution
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
           {metrics.map((metric) => (
             <div
               key={metric.label}
-              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-2xl border border-slate-200/90 bg-white p-4.5 dark:border-slate-800/90 dark:bg-slate-900/90"
             >
               <div className="flex items-center gap-2">
                 <span className={cn("h-2 w-2 rounded-full", metric.dot)} />
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                   {metric.label}
                 </p>
               </div>
               <p
                 className={cn(
-                  "mt-1 text-2xl font-bold tabular-nums sm:text-3xl",
+                  "mt-2 text-2xl font-bold tabular-nums sm:text-3xl",
                   metric.valueClass,
                 )}
               >
                 {metric.value}
               </p>
-              <p className="text-[11px] leading-4 text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 {metric.hint}
               </p>
             </div>
@@ -579,20 +608,20 @@ export function FinanceLedger() {
           <div>
             <h2
               id="category-totals-title"
-              className="text-sm font-bold tracking-tight text-slate-900 dark:text-white"
+              className="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100"
             >
-              Collections by category
+              Collections by Category
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              All recorded entries · updated instantly
+              Real-time ministry totals and percentage breakdown
             </p>
           </div>
-          <p className="text-sm font-bold tabular-nums text-slate-700 dark:text-slate-200">
+          <p className="text-sm font-bold tabular-nums text-slate-900 dark:text-slate-100">
             {formatCurrency(totals.total)}
           </p>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="mt-3.5 grid grid-cols-2 gap-3.5 xl:grid-cols-4">
           {CATEGORY_ORDER.map((category) => {
             const meta = CATEGORY_META[category];
             const data = totals.byCategory[category];
@@ -601,7 +630,7 @@ export function FinanceLedger() {
             return (
               <article
                 key={category}
-                className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                className="rounded-2xl border border-slate-200/90 bg-white p-4.5 dark:border-slate-800/90 dark:bg-slate-900/90"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span
@@ -612,22 +641,22 @@ export function FinanceLedger() {
                   >
                     <CategoryGlyph category={category} className="h-4 w-4" />
                   </span>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold tabular-nums text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                     {data.count} {data.count === 1 ? "entry" : "entries"}
                   </span>
                 </div>
-                <p className="mt-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
                   {meta.label}
                 </p>
-                <p className="text-lg font-bold tabular-nums">{formatCurrency(data.total)}</p>
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">{formatCurrency(data.total)}</p>
+                <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
-                    className={cn("h-full rounded-full", meta.bar)}
+                    className={cn("h-full rounded-full transition-all duration-300", meta.bar)}
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
-                  {percent}% of all collections
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-300">{percent}%</span> of total funds
                 </p>
               </article>
             );
@@ -637,7 +666,7 @@ export function FinanceLedger() {
 
       <section
         aria-labelledby="history-title"
-        className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white dark:border-slate-800/90 dark:bg-slate-900/90"
       >
         <div className="border-b border-slate-100 p-4 sm:p-5 dark:border-slate-800">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -646,14 +675,30 @@ export function FinanceLedger() {
                 Transaction history
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {filtered.length} of {transactions.length} entries ·{" "}
-                <span className="font-semibold text-slate-700 dark:text-slate-200">
+                Showing{" "}
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                  {startEntry}–{endEntry}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                  {filtered.length}
+                </span>{" "}
+                entries ·{" "}
+                <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
                   {formatCurrency(filteredTotal)}
                 </span>
               </p>
             </div>
             <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              Sorted by newest
+              Page{" "}
+              <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                {safePage}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                {totalPages}
+              </span>{" "}
+              · 10 per page
             </p>
           </div>
 
@@ -668,7 +713,10 @@ export function FinanceLedger() {
                   id="finance-search"
                   type="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setCurrentPage(1);
+                  }}
                   placeholder="Search giver or note…"
                   autoComplete="off"
                   className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm font-medium outline-none transition-colors placeholder:text-slate-500 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800/60 dark:placeholder:text-slate-400 dark:focus:bg-slate-900"
@@ -676,7 +724,10 @@ export function FinanceLedger() {
                 {query && (
                   <button
                     type="button"
-                    onClick={() => setQuery("")}
+                    onClick={() => {
+                      setQuery("");
+                      setCurrentPage(1);
+                    }}
                     aria-label="Clear search"
                     className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/60 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
                   >
@@ -690,7 +741,10 @@ export function FinanceLedger() {
                   id="finance-month"
                   label="Filter by month"
                   value={monthFilter}
-                  onChange={setMonthFilter}
+                  onChange={(value) => {
+                    setMonthFilter(value);
+                    setCurrentPage(1);
+                  }}
                   options={[
                     { value: "all", label: "All months" },
                     ...monthOptions.map(([value, label]) => ({ value, label })),
@@ -700,7 +754,10 @@ export function FinanceLedger() {
                   id="finance-method"
                   label="Filter by payment method"
                   value={methodFilter}
-                  onChange={(value) => setMethodFilter(value as Method | "all")}
+                  onChange={(value) => {
+                    setMethodFilter(value as Method | "all");
+                    setCurrentPage(1);
+                  }}
                   options={[
                     { value: "all", label: "All methods" },
                     ...METHODS.map((method) => ({ value: method, label: method })),
@@ -713,7 +770,10 @@ export function FinanceLedger() {
               <div className="-mx-1 flex flex-1 gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
                 <FilterChip
                   active={categoryFilter === "all"}
-                  onClick={() => setCategoryFilter("all")}
+                  onClick={() => {
+                    setCategoryFilter("all");
+                    setCurrentPage(1);
+                  }}
                   label="All"
                   count={transactions.length}
                 />
@@ -721,7 +781,10 @@ export function FinanceLedger() {
                   <FilterChip
                     key={category}
                     active={categoryFilter === category}
-                    onClick={() => setCategoryFilter(category)}
+                    onClick={() => {
+                      setCategoryFilter(category);
+                      setCurrentPage(1);
+                    }}
                     label={CATEGORY_META[category].label}
                     count={totals.byCategory[category].count}
                   />
@@ -762,7 +825,7 @@ export function FinanceLedger() {
         ) : (
           <>
             <div className="divide-y divide-slate-100 lg:hidden dark:divide-slate-800">
-              {filtered.map((transaction) => (
+              {paginatedTransactions.map((transaction) => (
                 <article key={transaction.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <CategoryBadge category={transaction.category} />
@@ -785,12 +848,6 @@ export function FinanceLedger() {
                   </div>
                 </article>
               ))}
-              <div className="flex items-center justify-between bg-slate-50 px-4 py-3 text-xs font-semibold dark:bg-slate-800/50">
-                <span>
-                  {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
-                </span>
-                <span className="text-sm tabular-nums">{formatCurrency(filteredTotal)}</span>
-              </div>
             </div>
 
             <div className="hidden lg:block">
@@ -800,44 +857,44 @@ export function FinanceLedger() {
                     <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/40">
                       <th
                         scope="col"
-                        className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                        className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Date
                       </th>
                       <th
                         scope="col"
-                        className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                        className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Category
                       </th>
                       <th
                         scope="col"
-                        className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                        className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Giver / source
                       </th>
                       <th
                         scope="col"
-                        className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 xl:table-cell dark:text-slate-400"
+                        className="hidden px-4 py-3 text-xs font-semibold text-slate-700 xl:table-cell dark:text-slate-300"
                       >
                         Method
                       </th>
                       <th
                         scope="col"
-                        className="hidden px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500 2xl:table-cell dark:text-slate-400"
+                        className="hidden px-4 py-3 text-xs font-semibold text-slate-700 2xl:table-cell dark:text-slate-300"
                       >
                         Recorded by
                       </th>
                       <th
                         scope="col"
-                        className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                        className="px-4 py-3 text-right text-xs font-semibold text-slate-700 dark:text-slate-300"
                       >
                         Amount
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filtered.map((transaction) => (
+                    {paginatedTransactions.map((transaction) => (
                       <tr
                         key={transaction.id}
                         className="transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40"
@@ -875,14 +932,115 @@ export function FinanceLedger() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-4 py-3 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800/50 dark:text-slate-400">
+            </div>
+
+            <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 dark:border-slate-800 dark:bg-slate-800/40">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                 <span>
-                  Showing {filtered.length} of {transactions.length} entries
+                  Showing{" "}
+                  <strong className="font-semibold tabular-nums text-slate-900 dark:text-white">
+                    {startEntry}–{endEntry}
+                  </strong>{" "}
+                  of{" "}
+                  <strong className="font-semibold tabular-nums text-slate-900 dark:text-white">
+                    {filtered.length}
+                  </strong>{" "}
+                  {filtered.length === 1 ? "entry" : "entries"}
+                  {hasFilters && (
+                    <span className="text-slate-400 dark:text-slate-500">
+                      {" "}(filtered from {transactions.length})
+                    </span>
+                  )}
                 </span>
-                <span className="text-sm tabular-nums text-slate-900 dark:text-white">
-                  {formatCurrency(filteredTotal)}
+                <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
+                  ·
+                </span>
+                <span>
+                  Page total:{" "}
+                  <strong className="font-semibold tabular-nums text-slate-900 dark:text-white">
+                    {formatCurrency(
+                      paginatedTransactions.reduce((sum, tx) => sum + tx.amount, 0),
+                    )}
+                  </strong>
+                </span>
+                <span aria-hidden="true" className="hidden text-slate-300 sm:inline dark:text-slate-600">
+                  ·
+                </span>
+                <span className="hidden sm:inline">
+                  Filtered total:{" "}
+                  <strong className="font-semibold tabular-nums text-slate-900 dark:text-white">
+                    {formatCurrency(filteredTotal)}
+                  </strong>
                 </span>
               </div>
+
+              {totalPages > 1 && (
+                <nav
+                  aria-label="Transaction pagination"
+                  className="flex items-center justify-between gap-1 sm:justify-end sm:gap-1.5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    aria-label="Previous page"
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 sm:h-8.5 sm:rounded-lg sm:px-2.5 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+                  >
+                    <ChevronLeftIcon className="h-4 w-4" />
+                    <span>Prev</span>
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    <span className="px-2 text-xs font-semibold tabular-nums text-slate-600 sm:hidden dark:text-slate-400">
+                      Page {safePage} of {totalPages}
+                    </span>
+                    <div className="hidden sm:flex items-center gap-1">
+                      {getPageNumbers(safePage, totalPages).map((item, idx) => {
+                        if (item === "...") {
+                          return (
+                            <span
+                              key={`ellipsis-${idx}`}
+                              className="flex h-8.5 w-6 items-center justify-center text-xs font-semibold text-slate-400"
+                            >
+                              …
+                            </span>
+                          );
+                        }
+
+                        const isCurrent = item === safePage;
+                        return (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => setCurrentPage(item)}
+                            aria-current={isCurrent ? "page" : undefined}
+                            aria-label={`Page ${item}`}
+                            className={cn(
+                              "flex h-8.5 w-8.5 items-center justify-center rounded-lg text-xs font-semibold tabular-nums transition-colors",
+                              isCurrent
+                                ? "bg-indigo-600 text-white shadow-xs"
+                                : "border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white",
+                            )}
+                          >
+                            {item}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    aria-label="Next page"
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 sm:h-8.5 sm:rounded-lg sm:px-2.5 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-white"
+                  >
+                    <span>Next</span>
+                    <ChevronRightIcon className="h-4 w-4" />
+                  </button>
+                </nav>
+              )}
             </div>
           </>
         )}
@@ -1090,8 +1248,8 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
 
         <form onSubmit={handleSubmit} className="mt-4">
           <fieldset>
-            <legend className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-              Category
+            <legend className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Offering Category
             </legend>
             <div className="mt-1.5 grid grid-cols-2 gap-2">
               {CATEGORY_ORDER.map((option) => {
@@ -1130,9 +1288,9 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
             <div>
               <label
                 htmlFor="entry-amount"
-                className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
-                Amount
+                Amount (₦)
               </label>
               <div className="relative mt-1">
                 <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-semibold text-slate-400">
@@ -1155,7 +1313,7 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
             <div>
               <label
                 htmlFor="entry-date"
-                className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 Date
               </label>
@@ -1173,7 +1331,7 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
             <div>
               <label
                 htmlFor="entry-method"
-                className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 Payment method
               </label>
@@ -1196,7 +1354,7 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
             <div>
               <label
                 htmlFor="entry-giver"
-                className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 Giver / source
               </label>
@@ -1214,9 +1372,9 @@ function EntryModal({ onClose, onSave }: EntryModalProps) {
           <div className="mt-3">
             <label
               htmlFor="entry-note"
-              className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+              className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
             >
-              Note <span className="font-medium normal-case tracking-normal">(optional)</span>
+              Note <span className="font-normal text-slate-500 dark:text-slate-400">(optional)</span>
             </label>
             <textarea
               id="entry-note"

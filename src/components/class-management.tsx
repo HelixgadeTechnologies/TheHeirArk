@@ -247,47 +247,42 @@ export function ClassManagement() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+    <div className="space-y-6">
+      <div className="space-y-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Sunday · Children&apos;s church
-            </p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-              Class management
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+              Class Cohorts & Teachers
             </h1>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Four age-based cohorts with teacher assignments, live rosters, and alerts for
-              children who have reached their class age limit.
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Four age-based cohorts with lead and assistant teacher assignments, live rosters, and age-advancement alerts.
             </p>
           </div>
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-            <ClassesIcon className="h-4 w-4 text-indigo-500" />
-            {stats.enrolled} children · {cohorts.length} cohorts
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            <ClassesIcon className="h-4 w-4 text-indigo-600" />
+            <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{stats.enrolled}</span> children across <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{cohorts.length}</span> cohorts
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <MetricCard label="Enrolled children" value={stats.enrolled} hint="Across all cohorts" dot="bg-indigo-500" valueClass="text-indigo-600 dark:text-indigo-400" />
-          <MetricCard label="Active cohorts" value={cohorts.length} hint="Age 0 through teens" dot="bg-sky-500" valueClass="text-sky-600 dark:text-sky-400" />
-          <MetricCard label="Moving up soon" value={stats.movingUp} hint="At the class age limit" dot="bg-amber-500" valueClass="text-amber-600 dark:text-amber-400" />
-          <MetricCard label="Capacity used" value={`${stats.fill}%`} hint={`${stats.enrolled} of ${stats.capacity} seats`} dot="bg-emerald-500" valueClass="text-emerald-600 dark:text-emerald-400" />
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+          <MetricCard label="Enrolled children" value={stats.enrolled} hint="Across all cohorts" dot="bg-indigo-500" valueClass="text-indigo-700 dark:text-indigo-400" />
+          <MetricCard label="Active cohorts" value={cohorts.length} hint="Age 0 through teens" dot="bg-sky-500" valueClass="text-sky-700 dark:text-sky-400" />
+          <MetricCard label="Moving up soon" value={stats.movingUp} hint="At the class age limit" dot="bg-amber-500" valueClass="text-amber-700 dark:text-amber-400" />
+          <MetricCard label="Capacity used" value={`${stats.fill}%`} hint={`${stats.enrolled} of ${stats.capacity} seats`} dot="bg-emerald-500" valueClass="text-emerald-700 dark:text-emerald-400" />
         </div>
 
         {notice && (
           <div
             role="status"
             aria-live="polite"
-            className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 sm:items-center dark:border-emerald-500/25 dark:bg-emerald-500/10"
+            className="flex items-start gap-3 rounded-2xl border border-emerald-300 bg-emerald-50/90 p-3.5 sm:items-center dark:border-emerald-500/30 dark:bg-emerald-500/10"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300">
               <CheckCircleIcon className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{notice.message}</p>
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+              <p className="truncate text-sm font-semibold text-emerald-950 dark:text-emerald-100">{notice.message}</p>
+              <p className="truncate text-xs text-emerald-800 dark:text-emerald-300">
                 {notice.detail}
               </p>
             </div>
@@ -295,7 +290,7 @@ export function ClassManagement() {
               type="button"
               onClick={() => setNotice(null)}
               aria-label="Dismiss notification"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/60 hover:text-slate-600 dark:hover:bg-white/5 dark:hover:text-slate-200"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-emerald-700 transition-colors hover:bg-emerald-100 dark:text-emerald-300 dark:hover:bg-emerald-500/20"
             >
               <CloseIcon className="h-4 w-4" />
             </button>
@@ -303,54 +298,54 @@ export function ClassManagement() {
         )}
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm lg:flex-row lg:items-center dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 lg:flex-row lg:items-center dark:border-slate-800/90 dark:bg-slate-900/90">
         <div className="relative flex-1">
           <label htmlFor="roster-search" className="sr-only">
             Search children by name
           </label>
-          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             id="roster-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search children…"
+            placeholder="Search children in classes…"
             autoComplete="off"
-            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm font-medium outline-none transition-colors placeholder:text-slate-500 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 dark:border-slate-700 dark:bg-slate-800/60 dark:placeholder:text-slate-400 dark:focus:bg-slate-900"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 text-sm font-medium text-slate-900 outline-none transition-colors placeholder:text-slate-500 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:bg-slate-900"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
               aria-label="Clear search"
-              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/60 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+              className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200/60 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
             >
               <CloseIcon className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={() => setAlertOnly((value) => !value)}
             aria-pressed={alertOnly}
             className={cn(
-              "inline-flex h-11 touch-manipulation items-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition-colors",
+              "inline-flex h-11 touch-manipulation items-center gap-2 rounded-xl border px-3.5 text-xs font-semibold transition-colors",
               alertOnly
-                ? "border-amber-500 bg-amber-500 text-white shadow-sm"
-                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
+                ? "border-amber-500 bg-amber-500 text-white shadow-xs"
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
             )}
           >
-            <AlertTriangleIcon className="h-4 w-4" />
-            Moving up only
+            <AlertTriangleIcon className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            Moving up soon
             {stats.movingUp > 0 && (
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.5 text-[10px] tabular-nums",
+                  "rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums",
                   alertOnly
                     ? "bg-white/20 text-white"
-                    : "bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
+                    : "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
                 )}
               >
                 {stats.movingUp}
@@ -358,7 +353,7 @@ export function ClassManagement() {
             )}
           </button>
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            {stats.movingUp} approaching an age limit
+            {stats.movingUp} approaching age boundary
           </p>
         </div>
       </div>
@@ -417,17 +412,17 @@ type MetricCardProps = {
 
 function MetricCard({ label, value, hint, dot, valueClass }: MetricCardProps) {
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 dark:border-slate-800/90 dark:bg-slate-900/90">
       <div className="flex items-center gap-2">
         <span className={cn("h-2 w-2 rounded-full", dot)} />
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
           {label}
         </p>
       </div>
-      <p className={cn("mt-1 text-3xl font-bold tabular-nums sm:text-4xl", valueClass)}>
+      <p className={cn("mt-2 text-2xl font-bold tabular-nums sm:text-3xl", valueClass)}>
         {value}
       </p>
-      <p className="text-[11px] text-slate-500 dark:text-slate-400">{hint}</p>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   );
 }

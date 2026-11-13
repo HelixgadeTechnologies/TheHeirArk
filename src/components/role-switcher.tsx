@@ -4,9 +4,9 @@ import { cn } from "@/lib/cn";
 import { ROLES, type Role } from "@/lib/navigation";
 
 const activeTone: Record<Role, string> = {
-  Admin: "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30",
-  Leader: "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30",
-  Teacher: "bg-amber-500 text-white shadow-sm shadow-amber-500/30",
+  Admin: "bg-indigo-600 text-white shadow-xs",
+  Leader: "bg-emerald-600 text-white shadow-xs",
+  Teacher: "bg-amber-600 text-white shadow-xs",
 };
 
 type RoleSwitcherProps = {
@@ -17,13 +17,13 @@ type RoleSwitcherProps = {
 export function RoleSwitcher({ role, onChange }: RoleSwitcherProps) {
   return (
     <>
-      {/* Mobile: compact native select */}
+      {/* Mobile: accessible 44px touch target native select */}
       <label className="sm:hidden">
         <span className="sr-only">Switch role</span>
         <select
           value={role}
           onChange={(event) => onChange(event.target.value as Role)}
-          className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          className="h-11 min-h-[44px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
           {ROLES.map((option) => (
             <option key={option} value={option}>
@@ -37,7 +37,7 @@ export function RoleSwitcher({ role, onChange }: RoleSwitcherProps) {
       <div
         role="group"
         aria-label="Switch role"
-        className="hidden h-9 items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 sm:flex dark:border-slate-700 dark:bg-slate-800/60"
+        className="hidden h-9 items-center gap-1 rounded-xl border border-slate-200 bg-slate-100/80 p-1 sm:flex dark:border-slate-700/80 dark:bg-slate-800/80"
       >
         {ROLES.map((option) => (
           <button
@@ -46,10 +46,10 @@ export function RoleSwitcher({ role, onChange }: RoleSwitcherProps) {
             onClick={() => onChange(option)}
             aria-pressed={role === option}
             className={cn(
-              "h-7 rounded-lg px-2.5 text-xs font-semibold transition-colors lg:px-3",
+              "h-7 rounded-lg px-2.5 text-xs font-semibold transition-all duration-150 lg:px-3 focus-visible:ring-2 focus-visible:ring-indigo-500",
               role === option
                 ? activeTone[option]
-                : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
             )}
           >
             {option}

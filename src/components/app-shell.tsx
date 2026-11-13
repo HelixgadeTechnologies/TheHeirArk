@@ -5,20 +5,23 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { Sidebar } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
-import { NAV_ITEMS, type Role } from "@/lib/navigation";
+import { useAuth } from "@/lib/auth-context";
+import { NAV_ITEMS } from "@/lib/navigation";
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const [role, setRole] = useState<Role>("Admin");
+  const { user, role, isAuthenticated, setRole, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
+  const isLoginPage = pathname === "/login";
+
   const activeItem =
     NAV_ITEMS.find((item) => item.href === pathname) ??
     NAV_ITEMS.find((item) => item.href !== "/" && pathname.startsWith(item.href));
 
-  // Prevent the page from scrolling behind the mobile drawer.
+  // Prevent background scroll when mobile navigation drawer is open.
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
@@ -28,28 +31,55 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Keep users out of pages their selected role cannot access.
   useEffect(() => {
-    if (activeItem && !activeItem.roles.includes(role)) {
+    if (!isLoginPage && activeItem && !activeItem.roles.includes(role)) {
       router.replace("/");
     }
-  }, [activeItem, role, router]);
+  }, [activeItem, role, router, isLoginPage]);
+
+  // If on login page, render full screen login UI without app chrome.
+  if (isLoginPage) {
+    return (
+      <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        {children}
+      </main>
+    );
+  }
+
+  // If not authenticated and not on login page, show smooth redirection fallback.
+  if (!isAuthenticated) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+            Redirecting to sign in…
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <Sidebar
         role={role}
+        user={user}
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
+        onLogout={logout}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar
           title={activeItem?.label ?? "Dashboard"}
           role={role}
+          user={user}
           collapsed={collapsed}
           onRoleChange={setRole}
           onToggleCollapse={() => setCollapsed((value) => !value)}
           onOpenMobile={() => setMobileOpen(true)}
+          onLogout={logout}
         />
 
         <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-8">

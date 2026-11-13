@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { ChildrenLedger } from "@/components/children-ledger";
@@ -9,5 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default function ChildrenPage() {
-  return <ChildrenLedger />;
+  return (
+    <Suspense fallback={null}>
+      <ChildrenLedger />
+    </Suspense>
+  );
 }

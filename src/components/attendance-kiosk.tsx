@@ -363,53 +363,48 @@ export function AttendanceKiosk() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              Sunday · 9:00 AM service
-            </p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-              Attendance kiosk
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-100">
+              Check-in & Pick-up Kiosk
             </h1>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Tap to check in. At pick-up, verify an authorized contact before signing a child
-              out.
+            <p className="mt-1 max-w-xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Tap to check in arrivals. At pick-up, verify an authorized guardian before completing sign-out.
             </p>
           </div>
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            Live · counters update instantly
+            Kiosk live · Instant synchronization
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
           {metrics.map((metric) => (
             <div
               key={metric.label}
-              className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-2xl border border-slate-200/90 bg-white p-4.5 dark:border-slate-800/90 dark:bg-slate-900/90"
             >
               <div className="flex items-center gap-2">
                 <span className={cn("h-2 w-2 rounded-full", metric.dot)} />
-                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">
                   {metric.label}
                 </p>
               </div>
               <p
                 className={cn(
-                  "mt-1 text-3xl font-bold tabular-nums sm:text-4xl",
+                  "mt-2 text-2xl font-bold tabular-nums sm:text-3xl",
                   metric.valueClass,
                 )}
                 aria-live={metric.live ? "polite" : undefined}
               >
                 {metric.value}
               </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500">{metric.hint}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{metric.hint}</p>
             </div>
           ))}
         </div>
