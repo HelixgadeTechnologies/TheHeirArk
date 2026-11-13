@@ -3,7 +3,8 @@
 import {
   createContext,
   useContext,
-  useState,
+  useMemo,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { Role } from "@/lib/navigation";
@@ -64,38 +65,56 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = "theark_auth_user_session";
 
-function getInitialUser(): User | null {
-  if (typeof window === "undefined") {
-    return DEMO_USERS.Admin;
-  }
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("theark_auth_change", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("theark_auth_change", callback);
+  };
+}
+
+function getSnapshot(): string {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "null") {
-      return null;
-    }
-    if (stored) {
-      const parsed = JSON.parse(stored) as User | null;
-      if (parsed && parsed.role) {
-        return parsed;
-      }
-    }
+    return localStorage.getItem(STORAGE_KEY) ?? "default";
   } catch {
-    // ignore
+    return "default";
   }
-  return DEMO_USERS.Admin;
+}
+
+function getServerSnapshot(): string {
+  return "default";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(getInitialUser);
+  const sessionRaw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const user: User | null = useMemo(() => {
+    if (sessionRaw === "null") {
+      return null;
+    }
+    if (sessionRaw === "default") {
+      return DEMO_USERS.Admin;
+    }
+    try {
+      const parsed = JSON.parse(sessionRaw) as User;
+      if (parsed && parsed.role) {
+        return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return DEMO_USERS.Admin;
+  }, [sessionRaw]);
 
   function persistUser(newUser: User | null) {
-    setUser(newUser);
     try {
       if (newUser) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newUser));
       } else {
         localStorage.setItem(STORAGE_KEY, "null");
       }
+      window.dispatchEvent(new Event("theark_auth_change"));
     } catch {
       // ignore storage errors
     }
