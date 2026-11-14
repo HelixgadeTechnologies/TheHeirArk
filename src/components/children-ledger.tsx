@@ -22,6 +22,7 @@ import {
   type Cohort,
   type Status,
 } from "@/lib/children-store";
+import { useFamilies, type Family } from "@/lib/family-store";
 
 const STATUS_META: Record<Status, { label: string; badge: string }> = {
   expected: {
@@ -100,9 +101,10 @@ function MetricCard({
 type ChildCardProps = {
   child: Child;
   cohort: Cohort | null;
+  family: Family | null;
 };
 
-function ChildCard({ child, cohort }: ChildCardProps) {
+function ChildCard({ child, cohort, family }: ChildCardProps) {
   return (
     <article
       className={cn(
@@ -129,6 +131,11 @@ function ChildCard({ child, cohort }: ChildCardProps) {
           <p className="truncate text-xs text-slate-500 dark:text-slate-400">
             {child.age} yrs · {cohort?.name ?? "Unassigned"}
           </p>
+          {family && (
+            <p className="mt-0.5 truncate text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              🏡 {family.familyName}
+            </p>
+          )}
           {(child.allergies || child.medicalNotes) && (
             <p className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">
               <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0 text-amber-600" />
@@ -186,37 +193,52 @@ function ChildCard({ child, cohort }: ChildCardProps) {
 
       <div className="space-y-2">
         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-          Guardians
+          Guardians &amp; Authorization
         </p>
-        {child.guardians.map((guardian) => (
-          <div key={guardian.name} className="flex items-center gap-2 text-xs leading-4">
-            <span
-              className={cn(
-                "h-2 w-2 shrink-0 rounded-full",
-                guardian.authorized ? "bg-emerald-500" : "bg-rose-500",
+        {child.guardians.map((guardian) => {
+          const perm = child.guardianPermissions?.find(
+            (p) => p.name.toLowerCase() === guardian.name.toLowerCase(),
+          );
+          const canDrop = perm ? perm.canDropOff : true;
+          const canPick = perm ? perm.canPickUp : guardian.authorized;
+
+          return (
+            <div key={guardian.name} className="flex items-center gap-2 text-xs leading-4">
+              <span
+                className={cn(
+                  "h-2 w-2 shrink-0 rounded-full",
+                  canPick ? "bg-emerald-500" : "bg-rose-500",
+                )}
+              />
+              <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">
+                {guardian.name}
+                <span className="text-slate-500 dark:text-slate-400">
+                  {" "}
+                  · {guardian.relation}
+                </span>
+              </span>
+              <div className="flex shrink-0 items-center gap-1">
+                {canDrop && (
+                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    Drop-off
+                  </span>
+                )}
+                {canPick ? (
+                  <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    Pick-up
+                  </span>
+                ) : (
+                  <span className="rounded-md bg-rose-50 px-1.5 py-0.5 text-[9px] font-semibold text-rose-700 ring-1 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
+                    No pick-up
+                  </span>
+                )}
+              </div>
+              {guardian.phone && (
+                <span className="shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{guardian.phone}</span>
               )}
-            />
-            <span className="min-w-0 flex-1 truncate font-medium text-slate-800 dark:text-slate-200">
-              {guardian.name}
-              <span className="text-slate-500 dark:text-slate-400">
-                {" "}
-                · {guardian.relation}
-              </span>
-            </span>
-            {guardian.authorized ? (
-              <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                Authorized
-              </span>
-            ) : (
-              <span className="shrink-0 rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700 ring-1 ring-rose-600/20 dark:bg-rose-500/10 dark:text-rose-300">
-                Not authorized
-              </span>
-            )}
-            {guardian.phone && (
-              <span className="shrink-0 tabular-nums text-slate-500 dark:text-slate-400">{guardian.phone}</span>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       <div className="mt-auto border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -241,6 +263,7 @@ const PAGE_SIZE = 10;
 export function ChildrenLedger() {
   const children = useChildren();
   const cohorts = useCohorts();
+  const families = useFamilies();
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlQ = searchParams.get("q") ?? "";
@@ -583,8 +606,16 @@ export function ChildrenLedger() {
           <div className="grid gap-3.5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
             {paginatedChildren.map((child) => {
               const cohort = cohortById(cohorts, child.classId);
+              const family = families.find((f) => f.id === child.familyId) ?? null;
 
-              return <ChildCard key={child.id} child={child} cohort={cohort} />;
+              return (
+                <ChildCard
+                  key={child.id}
+                  child={child}
+                  cohort={cohort}
+                  family={family}
+                />
+              );
             })}
           </div>
         ) : (
@@ -596,7 +627,7 @@ export function ChildrenLedger() {
                     scope="col"
                     className="px-4 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300"
                   >
-                    Child
+                    Child &amp; Household
                   </th>
                   <th
                     scope="col"
@@ -633,6 +664,7 @@ export function ChildrenLedger() {
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedChildren.map((child) => {
                   const cohort = cohortById(cohorts, child.classId);
+                  const family = families.find((f) => f.id === child.familyId) ?? null;
                   const guardian = child.guardians[0];
                   const hasCareNotes = child.allergies || child.medicalNotes;
 
@@ -656,9 +688,17 @@ export function ChildrenLedger() {
                             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {child.name}
                             </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                              {child.age} yrs old
-                            </p>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                              <span>{child.age} yrs old</span>
+                              {family && (
+                                <>
+                                  <span>·</span>
+                                  <span className="font-medium text-indigo-600 dark:text-indigo-400">
+                                    {family.familyName}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -671,9 +711,16 @@ export function ChildrenLedger() {
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          {guardian?.name ?? "Guardian"}
-                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                            {guardian?.name ?? "Guardian"}
+                          </p>
+                          {guardian?.authorized && (
+                            <span className="rounded-md bg-emerald-50 px-1.5 py-0.2 text-[9px] font-semibold text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                              Pick-up ok
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
                           {guardian ? `${guardian.relation} · ${guardian.phone}` : "No contact"}
                         </p>

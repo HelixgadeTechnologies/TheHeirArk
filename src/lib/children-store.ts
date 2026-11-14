@@ -11,13 +11,25 @@ export type Guardian = {
   authorized: boolean;
 };
 
+export type ChildGuardianPermission = {
+  memberId?: string;
+  name: string;
+  relation: string;
+  phone: string;
+  canDropOff: boolean;
+  canPickUp: boolean;
+  authorized: boolean;
+};
+
 export type Child = {
   id: string;
   name: string;
   age: number;
   classId: string;
+  familyId?: string;
   bornOn?: string;
   guardians: Guardian[];
+  guardianPermissions?: ChildGuardianPermission[];
   status: Status;
   arrivedAt?: string;
   dropOffBy?: string;
@@ -55,8 +67,10 @@ export type NewChild = {
   name: string;
   age: number;
   classId: string;
+  familyId?: string;
   bornOn?: string;
   guardians: Guardian[];
+  guardianPermissions?: ChildGuardianPermission[];
   allergies?: string;
   medicalNotes?: string;
 };
@@ -137,6 +151,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Ava Thompson",
     age: 3,
     classId: "little-lights",
+    familyId: "fam-thompson",
     status: "checked-out",
     guardians: [
       { name: "Rachel Thompson", relation: "Mother", phone: "(555) 051-9044", authorized: true },
@@ -152,6 +167,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Sophia Mensah",
     age: 4,
     classId: "little-lights",
+    familyId: "fam-mensah-1",
     status: "expected",
     guardians: [
       { name: "Sarah Mensah", relation: "Mother", phone: "(555) 014-4821", authorized: true },
@@ -164,6 +180,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Levi Osei",
     age: 2,
     classId: "little-lights",
+    familyId: "fam-osei",
     status: "expected",
     guardians: [
       { name: "Kwame Osei", relation: "Father", phone: "(555) 061-3345", authorized: true },
@@ -175,6 +192,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Amara Nwosu",
     age: 1,
     classId: "little-lights",
+    familyId: "fam-nwosu",
     status: "expected",
     guardians: [
       { name: "Ngozi Nwosu", relation: "Mother", phone: "(555) 062-8820", authorized: true },
@@ -187,6 +205,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Ella Mensah",
     age: 6,
     classId: "kingdom-kids",
+    familyId: "fam-mensah-1",
     status: "checked-in",
     guardians: [
       { name: "Sarah Mensah", relation: "Mother", phone: "(555) 014-4821", authorized: true },
@@ -200,6 +219,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Liam Okafor",
     age: 7,
     classId: "kingdom-kids",
+    familyId: "fam-okafor",
     status: "checked-in",
     guardians: [
       { name: "Grace Okafor", relation: "Mother", phone: "(555) 045-6632", authorized: true },
@@ -213,6 +233,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Micah Johnson",
     age: 5,
     classId: "kingdom-kids",
+    familyId: "fam-johnson",
     status: "expected",
     guardians: [
       { name: "Marcus Johnson", relation: "Father", phone: "(555) 066-1170", authorized: true },
@@ -224,6 +245,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Caleb Kim",
     age: 7,
     classId: "kingdom-kids",
+    familyId: "fam-kim",
     status: "expected",
     guardians: [
       { name: "Daniel Kim", relation: "Father", phone: "(555) 032-7788", authorized: true },
@@ -235,6 +257,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Elijah Bello",
     age: 8,
     classId: "kingdom-kids",
+    familyId: "fam-bello",
     status: "checked-out",
     guardians: [
       { name: "Funke Bello", relation: "Mother", phone: "(555) 081-5520", authorized: true },
@@ -250,6 +273,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Noah Adeyemi",
     age: 9,
     classId: "overcomers",
+    familyId: "fam-adeyemi-1",
     status: "checked-in",
     guardians: [
       { name: "Tunde Adeyemi", relation: "Father", phone: "(555) 019-2210", authorized: true },
@@ -263,6 +287,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Isabella Grace",
     age: 10,
     classId: "overcomers",
+    familyId: "fam-grace",
     status: "expected",
     guardians: [
       { name: "Naomi Grace", relation: "Mother", phone: "(555) 072-3388", authorized: true },
@@ -274,6 +299,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Maya Patel",
     age: 12,
     classId: "overcomers",
+    familyId: "fam-patel",
     status: "checked-out",
     guardians: [
       { name: "Priya Patel", relation: "Mother", phone: "(555) 093-7712", authorized: true },
@@ -289,6 +315,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Josiah Reed",
     age: 13,
     classId: "teens",
+    familyId: "fam-reed",
     status: "expected",
     guardians: [
       { name: "Hannah Reed", relation: "Mother", phone: "(555) 104-8890", authorized: true },
@@ -300,6 +327,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Esther Adeyemi",
     age: 14,
     classId: "teens",
+    familyId: "fam-adeyemi-1",
     status: "expected",
     guardians: [
       { name: "Ayo Adeyemi", relation: "Father", phone: "(555) 067-4412", authorized: true },
@@ -312,6 +340,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Michael Osei",
     age: 15,
     classId: "teens",
+    familyId: "fam-osei",
     status: "expected",
     guardians: [
       { name: "Ngozi Osei", relation: "Mother", phone: "(555) 068-9920", authorized: true },
@@ -323,6 +352,7 @@ export const INITIAL_CHILDREN: Child[] = [
     name: "Rebecca Mensah",
     age: 16,
     classId: "teens",
+    familyId: "fam-mensah-1",
     status: "checked-out",
     guardians: [
       { name: "David Mensah", relation: "Father", phone: "(555) 069-1150", authorized: true },
@@ -389,8 +419,10 @@ export function addChild(input: NewChild) {
     name: input.name.trim(),
     age: input.age,
     classId: input.classId,
+    familyId: input.familyId,
     bornOn: input.bornOn || undefined,
     guardians,
+    guardianPermissions: input.guardianPermissions,
     status: "expected",
     allergies: normalize(input.allergies),
     medicalNotes: normalize(input.medicalNotes),
