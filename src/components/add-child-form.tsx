@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -10,6 +10,7 @@ import {
   ChevronDownIcon,
   CloseIcon,
   PlusIcon,
+  SearchIcon,
   ShieldCheckIcon,
 } from "@/components/icons";
 import { cn } from "@/lib/cn";
@@ -19,7 +20,7 @@ import {
   type ChildGuardianPermission,
   type Guardian,
 } from "@/lib/children-store";
-import { useFamilies } from "@/lib/family-store";
+import { useFamilies, type Family } from "@/lib/family-store";
 
 function suggestedCohort(ageNum: number) {
   const match = INITIAL_COHORTS.find((cohort) => {
@@ -265,33 +266,11 @@ export function AddChildForm() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <label
-                  htmlFor="select-family"
-                  className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
-                >
-                  Select Household <span className="font-bold text-rose-600">*</span>
-                </label>
-                <div className="relative mt-1.5">
-                  <select
-                    id="select-family"
-                    value={selectedFamilyId}
-                    onChange={(event) => setSelectedFamilyId(event.target.value)}
-                    className="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 pr-10 text-sm font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-100 dark:focus:bg-slate-900"
-                  >
-                    {families.map((family) => {
-                      const primary = family.members.find((m) => m.isPrimary) ?? family.members[0];
-                      const adultCount = family.members.length;
-                      return (
-                        <option key={family.id} value={family.id}>
-                          {family.familyName} · {primary?.name} ({adultCount} adult{adultCount > 1 ? "s" : ""}) · {family.address || family.primaryPhone}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </div>
-              </div>
+              <SearchableFamilySelect
+                families={families}
+                selectedFamilyId={activeFamilyId}
+                onSelectFamily={(id) => setSelectedFamilyId(id)}
+              />
 
               {selectedFamily && (
                 <div className="sm:col-span-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-800/40">
@@ -684,6 +663,263 @@ export function AddChildForm() {
           </div>
         </form>
       </section>
+    </div>
+  );
+}
+
+function SearchableFamilySelect({
+  families,
+  selectedFamilyId,
+  onSelectFamily,
+}: {
+  families: Family[];
+  selectedFamilyId: string;
+  onSelectFamily: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedFamily = useMemo(
+    () => families.find((f) => f.id === selectedFamilyId),
+    [families, selectedFamilyId],
+  );
+
+  function handleClose() {
+    setIsOpen(false);
+    setSearch("");
+  }
+
+  function handleToggleOpen() {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (!next) setSearch("");
+      return next;
+    });
+  }
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [isOpen]);
+
+  // Focus search input when opened
+  useEffect(() => {
+    if (isOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  const filteredFamilies = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return families;
+
+    return families.filter((family) => {
+      const familyName = family.familyName.toLowerCase();
+      const surname = family.surname.toLowerCase();
+      const address = (family.address ?? "").toLowerCase();
+      const phone = family.primaryPhone.toLowerCase();
+      const memberNames = family.members
+        .map((m) => `${m.name} ${m.relation} ${m.phone}`)
+        .join(" ")
+        .toLowerCase();
+
+      return (
+        familyName.includes(q) ||
+        surname.includes(q) ||
+        address.includes(q) ||
+        phone.includes(q) ||
+        memberNames.includes(q)
+      );
+    });
+  }, [families, search]);
+
+  return (
+    <div ref={containerRef} className="relative sm:col-span-2">
+      <label
+        id="household-combobox-label"
+        className="block text-xs font-semibold text-slate-700"
+      >
+        Select Household <span className="font-bold text-rose-600">*</span>
+      </label>
+
+      {/* Combobox Trigger Box */}
+      <button
+        type="button"
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-controls="household-options-list"
+        aria-haspopup="listbox"
+        aria-labelledby="household-combobox-label"
+        onClick={handleToggleOpen}
+        className={cn(
+          "mt-1.5 flex min-h-[48px] w-full items-center justify-between gap-3 rounded-xl border bg-white px-3.5 py-2.5 text-left transition-all",
+          isOpen
+            ? "border-indigo-500 ring-2 ring-indigo-500/20 shadow-xs"
+            : "border-slate-200 hover:border-slate-300 shadow-2xs",
+        )}
+      >
+        {selectedFamily ? (
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-bold text-slate-900">
+                {selectedFamily.familyName}
+              </span>
+              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                {selectedFamily.members.length} adult{selectedFamily.members.length > 1 ? "s" : ""}
+              </span>
+            </div>
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              {selectedFamily.members.map((m) => `${m.name} (${m.relation})`).join(" · ")}
+            </p>
+          </div>
+        ) : (
+          <span className="text-sm font-medium text-slate-400">
+            Select or search for a family household…
+          </span>
+        )}
+
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+            {isOpen ? "Close" : "Search"}
+          </span>
+          <ChevronDownIcon
+            className={cn(
+              "h-4 w-4 text-slate-400 transition-transform duration-200",
+              isOpen && "rotate-180 text-indigo-600",
+            )}
+          />
+        </div>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 max-h-80 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+          {/* Search Input Bar */}
+          <div className="border-b border-slate-100 bg-slate-50/80 p-2.5">
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Type surname, parent name, or phone number..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-9 text-xs font-medium text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    handleClose();
+                  }
+                }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600"
+                >
+                  <CloseIcon className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Families List */}
+          <div
+            id="household-options-list"
+            role="listbox"
+            aria-labelledby="household-combobox-label"
+            className="max-h-60 divide-y divide-slate-100/60 overflow-y-auto p-1.5"
+          >
+            {filteredFamilies.map((family) => {
+              const isSelected = family.id === selectedFamilyId;
+              const primary = family.members.find((m) => m.isPrimary) ?? family.members[0];
+              const spouse = family.members.find(
+                (m) =>
+                  m.isSpouse ||
+                  (!m.isPrimary && (m.relation === "Father" || m.relation === "Mother")),
+              );
+
+              return (
+                <button
+                  key={family.id}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onSelectFamily(family.id);
+                    handleClose();
+                  }}
+                  className={cn(
+                    "flex w-full items-start justify-between gap-3 rounded-xl p-3 text-left transition-colors",
+                    isSelected
+                      ? "bg-indigo-50/80 text-indigo-900"
+                      : "text-slate-800 hover:bg-slate-50",
+                  )}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-900">
+                        {family.familyName}
+                      </span>
+                      {isSelected && (
+                        <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold text-white">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-slate-600">
+                      {primary?.name} ({primary?.relation})
+                      {spouse ? ` & ${spouse.name} (${spouse.relation})` : ""}
+                    </p>
+                    <p className="mt-0.5 truncate text-[11px] text-slate-400">
+                      {family.address || family.primaryPhone}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                      {family.members.length} adult{family.members.length > 1 ? "s" : ""}
+                    </span>
+                    {isSelected && (
+                      <CheckCircleIcon className="h-4 w-4 text-indigo-600" />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+
+            {filteredFamilies.length === 0 && (
+              <div className="p-6 text-center">
+                <p className="text-xs font-semibold text-slate-800">
+                  No family households match &ldquo;{search}&rdquo;
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Check the spelling or register this household first.
+                </p>
+                <Link
+                  href="/families/add?returnTo=/children/add"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-indigo-500"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  Register &ldquo;{search}&rdquo; family
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
