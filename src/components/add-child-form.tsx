@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -18,12 +19,7 @@ import {
   type ChildGuardianPermission,
   type Guardian,
 } from "@/lib/children-store";
-import {
-  addFamily,
-  useFamilies,
-  type Family,
-  type GuardianRelation,
-} from "@/lib/family-store";
+import { useFamilies } from "@/lib/family-store";
 
 function suggestedCohort(ageNum: number) {
   const match = INITIAL_COHORTS.find((cohort) => {
@@ -95,9 +91,6 @@ export function AddChildForm() {
 
     return [...householdPerms, ...customContacts];
   }, [selectedFamily, overrides, customContacts]);
-
-  // New family modal state
-  const [isNewFamilyModalOpen, setIsNewFamilyModalOpen] = useState(false);
 
   // Add extra custom guardian state
   const [showAddCustom, setShowAddCustom] = useState(false);
@@ -262,14 +255,13 @@ export function AddChildForm() {
                   Select the registered family household to import parent and spouse details.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsNewFamilyModalOpen(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 px-3 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100/70 dark:border-indigo-700/60 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+              <Link
+                href="/families/add?returnTo=/children/add"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-dashed border-indigo-300 bg-indigo-50/50 px-3 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100/70"
               >
                 <PlusIcon className="h-4 w-4" />
                 Add family first
-              </button>
+              </Link>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -692,194 +684,6 @@ export function AddChildForm() {
           </div>
         </form>
       </section>
-
-      {/* Quick Add Family Modal */}
-      {isNewFamilyModalOpen && (
-        <QuickAddFamilyModal
-          onClose={() => setIsNewFamilyModalOpen(false)}
-          onCreated={(newFam) => {
-            setSelectedFamilyId(newFam.id);
-            setIsNewFamilyModalOpen(false);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function QuickAddFamilyModal({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: (family: Family) => void;
-}) {
-  const [surname, setSurname] = useState("");
-  const [address, setAddress] = useState("");
-  const [parentName, setParentName] = useState("");
-  const [relation, setRelation] = useState<GuardianRelation>("Mother");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-
-  const valid = surname.trim().length > 0 && parentName.trim().length > 0 && phone.trim().length > 0;
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
-
-    const newFamily = addFamily({
-      surname: surname.trim(),
-      familyName: `${surname.trim()} Household`,
-      address: address.trim() || undefined,
-      primaryGuardianName: parentName.trim(),
-      primaryRelation: relation,
-      primaryPhone: phone.trim(),
-      primaryEmail: email.trim() || undefined,
-    });
-
-    onCreated(newFamily);
-  }
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="quick-add-family-title"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-xs"
-    >
-      <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div>
-            <h3 id="quick-add-family-title" className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Add New Family Household
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Create the household and primary guardian first.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close dialog"
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Family / Household Surname *
-            </label>
-            <input
-              type="text"
-              required
-              value={surname}
-              onChange={(e) => setSurname(e.target.value)}
-              placeholder="e.g. Adeyemi"
-              className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Primary Parent / Guardian *
-              </label>
-              <input
-                type="text"
-                required
-                value={parentName}
-                onChange={(e) => setParentName(e.target.value)}
-                placeholder="e.g. Folake Adeyemi"
-                className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Relationship *
-              </label>
-              <div className="relative mt-1.5">
-                <select
-                  value={relation}
-                  onChange={(e) => setRelation(e.target.value as GuardianRelation)}
-                  className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-8 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                >
-                  <option value="Mother">Mother</option>
-                  <option value="Father">Father</option>
-                  <option value="Spouse">Spouse</option>
-                  <option value="Guardian">Legal Guardian</option>
-                  <option value="Grandmother">Grandmother</option>
-                  <option value="Grandfather">Grandfather</option>
-                  <option value="Aunt">Aunt</option>
-                  <option value="Uncle">Uncle</option>
-                  <option value="Other">Other</option>
-                </select>
-                <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Primary Phone *
-              </label>
-              <input
-                type="tel"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(555) 019-2210"
-                className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Residential Address
-            </label>
-            <input
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g. 14 Glover Road, Ikoyi"
-              className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-10 flex-1 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!valid}
-              className="h-10 flex-1 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-            >
-              Create &amp; select family
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

@@ -19,7 +19,6 @@ import { PaginationFooter } from "@/components/pagination";
 import { useChildren, useCohorts } from "@/lib/children-store";
 import { cn } from "@/lib/cn";
 import {
-  addFamily,
   addSpouseOrGuardian,
   useFamilies,
   type Family,
@@ -46,7 +45,6 @@ export function FamiliesDirectory() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Modals & Feedback
-  const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [addSpouseFamily, setAddSpouseFamily] = useState<Family | null>(null);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null,
@@ -137,14 +135,13 @@ export function FamiliesDirectory() {
               <ShieldCheckIcon className="h-4 w-4 text-emerald-600" />
               Verified pick-up authorizations
             </span>
-            <button
-              type="button"
-              onClick={() => setAddFamilyOpen(true)}
+            <Link
+              href="/families/add"
               className="inline-flex h-11 w-full touch-manipulation items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500 active:scale-[0.99] sm:w-auto"
             >
               <PlusIcon className="h-4 w-4" />
               Add family first
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -336,14 +333,13 @@ export function FamiliesDirectory() {
               Register a family household first, or search by another surname.
             </p>
             <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setAddFamilyOpen(true)}
+              <Link
+                href="/families/add"
                 className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
               >
                 <PlusIcon className="h-4 w-4" />
                 Register new family
-              </button>
+              </Link>
               {query && (
                 <button
                   type="button"
@@ -665,20 +661,6 @@ export function FamiliesDirectory() {
         )}
       </section>
 
-      {/* Add Family Modal */}
-      {addFamilyOpen && (
-        <AddFamilyModal
-          onClose={() => setAddFamilyOpen(false)}
-          onSaved={(newFam) => {
-            setFeedback({
-              type: "success",
-              message: `Registered ${newFam.familyName}! You can now add a spouse or register children.`,
-            });
-            setAddFamilyOpen(false);
-          }}
-        />
-      )}
-
       {/* Add Spouse / Co-Guardian Modal */}
       {addSpouseFamily && (
         <AddSpouseModal
@@ -693,273 +675,6 @@ export function FamiliesDirectory() {
           }}
         />
       )}
-    </div>
-  );
-}
-
-// -------------------------------------------------------------------------------------------------
-// Add Family Modal
-// -------------------------------------------------------------------------------------------------
-type AddFamilyModalProps = {
-  onClose: () => void;
-  onSaved: (family: Family) => void;
-};
-
-function AddFamilyModal({ onClose, onSaved }: AddFamilyModalProps) {
-  const [surname, setSurname] = useState("");
-  const [familyName, setFamilyName] = useState("");
-  const [primaryName, setPrimaryName] = useState("");
-  const [relation, setRelation] = useState<GuardianRelation>("Father");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
-
-  function handleSurnameChange(val: string) {
-    setSurname(val);
-    if (!familyName || familyName.endsWith(" Household")) {
-      setFamilyName(val ? `${val.trim()} Household` : "");
-    }
-  }
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!surname.trim()) {
-      setError("Please enter the family surname.");
-      return;
-    }
-    if (!primaryName.trim()) {
-      setError("Please enter the primary parent / guardian's name.");
-      return;
-    }
-    if (!phone.trim()) {
-      setError("Please enter a primary telephone contact.");
-      return;
-    }
-
-    const created = addFamily({
-      surname: surname.trim(),
-      familyName: familyName.trim() || `${surname.trim()} Household`,
-      primaryGuardianName: primaryName.trim(),
-      primaryRelation: relation,
-      primaryPhone: phone.trim(),
-      primaryEmail: email.trim() || undefined,
-      address: address.trim() || undefined,
-    });
-
-    onSaved(created);
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-      <button
-        type="button"
-        aria-label="Close dialog"
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="add-family-title"
-        className="relative z-10 flex max-h-[92dvh] w-full max-w-lg flex-col overflow-y-auto rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl sm:m-4 sm:rounded-3xl sm:p-6 sm:pb-6 dark:bg-slate-900"
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 dark:border-slate-800">
-          <div>
-            <h2
-              id="add-family-title"
-              className="text-base font-bold text-slate-900 dark:text-slate-100"
-            >
-              Register Family Household First
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Establish the primary family household before registering spouse and children.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-              <AlertTriangleIcon className="h-4 w-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label
-                htmlFor="fam-surname"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                Family Surname *
-              </label>
-              <input
-                id="fam-surname"
-                type="text"
-                required
-                value={surname}
-                onChange={(e) => handleSurnameChange(e.target.value)}
-                placeholder="e.g. Balogun"
-                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="fam-name"
-                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
-              >
-                Household Name
-              </label>
-              <input
-                id="fam-name"
-                type="text"
-                value={familyName}
-                onChange={(e) => setFamilyName(e.target.value)}
-                placeholder="e.g. Balogun Household"
-                className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-              />
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 dark:border-slate-800 dark:bg-slate-800/40">
-            <p className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              Primary Guardian / Head of Household
-            </p>
-            <div className="mt-3 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    htmlFor="pri-name"
-                    className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Full Name *
-                  </label>
-                  <input
-                    id="pri-name"
-                    type="text"
-                    required
-                    value={primaryName}
-                    onChange={(e) => setPrimaryName(e.target.value)}
-                    placeholder="e.g. Adebayo Balogun"
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="pri-rel"
-                    className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Relationship *
-                  </label>
-                  <select
-                    id="pri-rel"
-                    value={relation}
-                    onChange={(e) => setRelation(e.target.value as GuardianRelation)}
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  >
-                    <option value="Father">Father</option>
-                    <option value="Mother">Mother</option>
-                    <option value="Grandfather">Grandfather</option>
-                    <option value="Grandmother">Grandmother</option>
-                    <option value="Legal Guardian">Legal Guardian</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label
-                    htmlFor="pri-phone"
-                    className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Telephone Number *
-                  </label>
-                  <input
-                    id="pri-phone"
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(555) 000-0000"
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="pri-email"
-                    className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    id="pri-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="email@example.com"
-                    className="mt-1 h-9.5 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label
-              htmlFor="fam-address"
-              className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
-            >
-              Home Address / Area (Optional)
-            </label>
-            <input
-              id="fam-address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g. 14 Jubilee Crescent, Lekki"
-              className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-900 outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-            />
-          </div>
-
-          <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-10 rounded-xl border border-slate-200 px-4 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-5 text-xs font-semibold text-white shadow-xs transition-colors hover:bg-indigo-500"
-            >
-              <PlusIcon className="h-4 w-4" />
-              <span>Register Family</span>
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }
