@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #f8fafc;
   --foreground: #0f172a;
   --border: rgba(226, 232, 240, 0.9);
@@ -14,15 +17,6 @@
   --color-border-muted: var(--border-muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --border: rgba(30, 41, 59, 0.9);
-    --border-muted: rgba(15, 23, 42, 0.9);
-  }
 }
 
 * {
@@ -46,13 +40,6 @@ body {
 ::selection {
   background-color: rgba(99, 102, 241, 0.2);
   color: #312e81;
-}
-
-@media (prefers-color-scheme: dark) {
-  ::selection {
-    background-color: rgba(129, 140, 248, 0.3);
-    color: #e0e7ff;
-  }
 }
 
 /* Polished browser surface: accessible focus rings */

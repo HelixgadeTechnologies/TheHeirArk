@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   // If on login page, render full screen login UI without app chrome.
   if (isLoginPage) {
     return (
-      <main className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <main className="min-h-screen bg-slate-50 text-slate-900">
         {children}
       </main>
     );
@@ -55,10 +55,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   // If not authenticated, render a matching outer shell while router redirects
   if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-900">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-medium text-slate-500">
             Redirecting to sign in…
           </p>
         </div>
@@ -67,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
       <Sidebar
         role={role}
         user={user}
