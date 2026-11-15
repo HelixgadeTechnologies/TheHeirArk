@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import {
   CheckCircleIcon,
@@ -12,7 +13,9 @@ import {
   PhoneIcon,
   SearchIcon,
   ShieldCheckIcon,
+  UserCheckIcon,
 } from "@/components/icons";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
 
 type ChildStatus = "expected" | "checked-in" | "checked-out";
@@ -235,6 +238,7 @@ function formatTime(date: Date) {
 }
 
 export function AttendanceKiosk() {
+  const { role } = useAuth();
   const [children, setChildren] = useState<Child[]>(INITIAL_CHILDREN);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -377,12 +381,23 @@ export function AttendanceKiosk() {
               Tap to check in arrivals. At pick-up, verify an authorized guardian before completing sign-out.
             </p>
           </div>
-          <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            </span>
-            Kiosk live · Instant synchronization
+          <div className="flex flex-wrap items-center gap-2.5">
+            {role === "Admin" && (
+              <Link
+                href="/settings/teacher-attendance"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/80 px-3.5 py-2 text-xs font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-100"
+              >
+                <UserCheckIcon className="h-4 w-4 text-indigo-600" />
+                <span>Teacher Sign-In (Admin)</span>
+              </Link>
+            )}
+            <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Kiosk live · Instant synchronization
+            </div>
           </div>
         </div>
 

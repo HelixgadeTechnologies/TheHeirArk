@@ -361,6 +361,20 @@ export function SettingsManagement() {
             </span>
           </button>
 
+          <Link
+            href="/settings/teacher-attendance"
+            className="-mb-px flex items-center gap-2 border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-300 hover:text-indigo-600"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span>Teacher Attendance</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 ring-1 ring-emerald-600/20">
+              Admin Kiosk
+            </span>
+          </Link>
+
           <button
             type="button"
             onClick={() => setActiveTab("general")}

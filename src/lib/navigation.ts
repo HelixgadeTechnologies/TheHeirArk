@@ -8,6 +8,7 @@ import {
   FinanceIcon,
   KioskIcon,
   SettingsIcon,
+  UserCheckIcon,
   type IconProps,
 } from "@/components/icons";
 
@@ -57,6 +58,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     label: "Finance",
     href: "/finance",
     icon: FinanceIcon,
+    roles: ["Admin"],
+  },
+  {
+    label: "Teacher Attendance",
+    href: "/settings/teacher-attendance",
+    icon: UserCheckIcon,
     roles: ["Admin"],
   },
   {
