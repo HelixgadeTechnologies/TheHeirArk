@@ -388,7 +388,7 @@ export function AttendanceKiosk() {
                 className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50/80 px-3.5 py-2 text-xs font-semibold text-indigo-700 shadow-2xs hover:bg-indigo-100"
               >
                 <UserCheckIcon className="h-4 w-4 text-indigo-600" />
-                <span>Teacher Sign-In (Admin)</span>
+                <span>Staff &amp; Teacher Sign-In</span>
               </Link>
             )}
             <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">

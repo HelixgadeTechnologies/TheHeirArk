@@ -369,9 +369,9 @@ export function SettingsManagement() {
               <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
-            <span>Teacher Attendance</span>
+            <span>Staff Attendance</span>
             <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 ring-1 ring-emerald-600/20">
-              Admin Kiosk
+              Teachers &amp; Leaders
             </span>
           </Link>
 

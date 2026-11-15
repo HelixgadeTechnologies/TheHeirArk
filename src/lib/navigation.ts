@@ -61,7 +61,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
     roles: ["Admin"],
   },
   {
-    label: "Teacher Attendance",
+    label: "Staff Attendance",
     href: "/settings/teacher-attendance",
     icon: UserCheckIcon,
     roles: ["Admin"],

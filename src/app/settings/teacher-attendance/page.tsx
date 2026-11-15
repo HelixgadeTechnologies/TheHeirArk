@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import { TeacherAttendanceManagement } from "@/components/teacher-attendance-management";
 
 export const metadata: Metadata = {
-  title: "Teacher Attendance (Admin)",
-  description: "Record teacher and volunteer attendance, assign classrooms, and verify staff shifts.",
+  title: "Staff & Teacher Attendance (Admin)",
+  description:
+    "Record attendance, verify room ratios, and track shifts for Teachers, Leaders, and Church Admins.",
 };
 
 export default function TeacherAttendancePage() {

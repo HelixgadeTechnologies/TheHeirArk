@@ -1,10 +1,15 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { Role } from "@/lib/navigation";
 
 export type TeacherAttendanceStatus = "expected" | "signed-in" | "signed-out";
 
 export type ServiceRole =
+  | "Ministry Director"
+  | "Ministry Coordinator"
+  | "Safety & Security"
+  | "Check-in Lead"
   | "Lead Teacher"
   | "Assistant Teacher"
   | "Substitute Teacher"
@@ -18,6 +23,7 @@ export type TeacherAttendanceRecord = {
   email: string;
   phone?: string;
   avatarInitials: string;
+  ministryRole: Role;
   assignedClass: string;
   roomNumber: string;
   serviceRole: ServiceRole;
@@ -31,6 +37,113 @@ export type TeacherAttendanceRecord = {
 };
 
 export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
+  // ---------------- Admins ----------------
+  {
+    id: "att-usr-admin",
+    userId: "usr-admin",
+    name: "Grace Okafor",
+    email: "admin@theark.church",
+    phone: "(555) 012-4411",
+    avatarInitials: "GO",
+    ministryRole: "Admin",
+    assignedClass: "Directorate & Administration",
+    roomNumber: "Directorate Office",
+    serviceRole: "Ministry Director",
+    status: "signed-in",
+    signedInAt: "8:00 AM",
+    signedInBy: "Grace Okafor (Admin)",
+    notes: "Service oversight, volunteer briefings, and leadership check-in.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: "att-usr-10",
+    userId: "usr-10",
+    name: "Funke Bello",
+    email: "funke.bello@theark.church",
+    phone: "(555) 081-5520",
+    avatarInitials: "FB",
+    ministryRole: "Admin",
+    assignedClass: "Directorate & Administration",
+    roomNumber: "Directorate Office",
+    serviceRole: "Ministry Director",
+    status: "signed-in",
+    signedInAt: "8:15 AM",
+    signedInBy: "Grace Okafor (Admin)",
+    notes: "Classroom ratio review and executive oversight.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+
+  // ---------------- Leaders ----------------
+  {
+    id: "att-usr-leader",
+    userId: "usr-leader",
+    name: "Ruth Mensah",
+    email: "leader@theark.church",
+    phone: "(555) 014-4820",
+    avatarInitials: "RM",
+    ministryRole: "Leader",
+    assignedClass: "Family & Volunteer Care",
+    roomNumber: "Main Foyer",
+    serviceRole: "Ministry Coordinator",
+    status: "signed-in",
+    signedInAt: "8:25 AM",
+    signedInBy: "Grace Okafor (Admin)",
+    notes: "Welcoming arrivals and orienting volunteer teachers.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: "att-marcus-johnson",
+    userId: "usr-5",
+    name: "Marcus Johnson",
+    email: "marcus.j@theark.church",
+    phone: "(555) 066-1170",
+    avatarInitials: "MJ",
+    ministryRole: "Leader",
+    assignedClass: "Kiosk & Safety Operations",
+    roomNumber: "Main Foyer / Kiosk",
+    serviceRole: "Safety & Security",
+    status: "signed-out",
+    signedInAt: "7:45 AM",
+    signedInBy: "Grace Okafor (Admin)",
+    signedOutAt: "9:15 AM",
+    signedOutBy: "Grace Okafor (Admin)",
+    notes: "Completed security pre-check and early morning kiosk setup.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: "att-priya-patel",
+    userId: "usr-8",
+    name: "Priya Patel",
+    email: "priya.p@theark.church",
+    phone: "(555) 093-7712",
+    avatarInitials: "PP",
+    ministryRole: "Leader",
+    assignedClass: "Curriculum Development",
+    roomNumber: "Resource Center",
+    serviceRole: "Ministry Coordinator",
+    status: "signed-in",
+    signedInAt: "8:35 AM",
+    signedInBy: "Grace Okafor (Admin)",
+    notes: "Lesson materials and curriculum distribution.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+  {
+    id: "att-usr-9",
+    userId: "usr-9",
+    name: "David Reed",
+    email: "david.reed@theark.church",
+    phone: "(555) 104-8890",
+    avatarInitials: "DR",
+    ministryRole: "Leader",
+    assignedClass: "Operations & Facilities",
+    roomNumber: "Facilities & Grounds",
+    serviceRole: "Safety & Security",
+    status: "expected",
+    notes: "Scheduled for hall inspection and mid-service security walk.",
+    serviceDate: new Date().toISOString().split("T")[0],
+  },
+
+  // ---------------- Teachers ----------------
   {
     id: "att-daniel-kim",
     userId: "usr-teacher",
@@ -38,6 +151,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "teacher@theark.church",
     phone: "(555) 032-7788",
     avatarInitials: "DK",
+    ministryRole: "Teacher",
     assignedClass: "Kingdom Kids (Ages 5–8)",
     roomNumber: "Room 102",
     serviceRole: "Lead Teacher",
@@ -54,6 +168,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "naomi.grace@theark.church",
     phone: "(555) 072-3388",
     avatarInitials: "NG",
+    ministryRole: "Teacher",
     assignedClass: "Little Lights (Ages 0–4)",
     roomNumber: "Room 101",
     serviceRole: "Lead Teacher",
@@ -70,6 +185,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "sarah.adebayo@theark.church",
     phone: "(555) 041-9922",
     avatarInitials: "SA",
+    ministryRole: "Teacher",
     assignedClass: "Overcomers (Ages 9–12)",
     roomNumber: "Room 201",
     serviceRole: "Lead Teacher",
@@ -85,6 +201,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "tunde.a@theark.church",
     phone: "(555) 019-2210",
     avatarInitials: "TA",
+    ministryRole: "Teacher",
     assignedClass: "Kingdom Kids (Ages 5–8)",
     roomNumber: "Room 102",
     serviceRole: "Assistant Teacher",
@@ -98,6 +215,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "hannah.reed@theark.church",
     phone: "(555) 104-8895",
     avatarInitials: "HR",
+    ministryRole: "Teacher",
     assignedClass: "Little Lights (Ages 0–4)",
     roomNumber: "Room 101",
     serviceRole: "Assistant Teacher",
@@ -111,6 +229,7 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     email: "emmanuel.osei@theark.church",
     phone: "(555) 061-3345",
     avatarInitials: "EO",
+    ministryRole: "Teacher",
     assignedClass: "General / Worship Hall",
     roomNumber: "Auditorium",
     serviceRole: "Classroom Floater",
@@ -118,37 +237,6 @@ export const INITIAL_TEACHERS: TeacherAttendanceRecord[] = [
     signedInAt: "9:00 AM",
     signedInBy: "Grace Okafor (Admin)",
     notes: "Leading morning praise & worship songs.",
-    serviceDate: new Date().toISOString().split("T")[0],
-  },
-  {
-    id: "att-priya-patel",
-    userId: "usr-8",
-    name: "Priya Patel",
-    email: "priya.p@theark.church",
-    phone: "(555) 093-7712",
-    avatarInitials: "PP",
-    assignedClass: "Kingdom Kids (Ages 5–8)",
-    roomNumber: "Room 102",
-    serviceRole: "Special Needs Support",
-    status: "expected",
-    serviceDate: new Date().toISOString().split("T")[0],
-  },
-  {
-    id: "att-marcus-johnson",
-    userId: "usr-5",
-    name: "Marcus Johnson",
-    email: "marcus.j@theark.church",
-    phone: "(555) 066-1170",
-    avatarInitials: "MJ",
-    assignedClass: "Teens & Lower Hall",
-    roomNumber: "Lower Hall",
-    serviceRole: "Classroom Floater",
-    status: "signed-out",
-    signedInAt: "7:45 AM",
-    signedInBy: "Grace Okafor (Admin)",
-    signedOutAt: "9:15 AM",
-    signedOutBy: "Grace Okafor (Admin)",
-    notes: "Completed security pre-check and early morning kiosk setup.",
     serviceDate: new Date().toISOString().split("T")[0],
   },
 ];
@@ -174,7 +262,35 @@ function loadAttendance(): TeacherAttendanceRecord[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TEACHERS));
       return INITIAL_TEACHERS;
     }
-    return JSON.parse(raw) as TeacherAttendanceRecord[];
+    const parsed = JSON.parse(raw) as TeacherAttendanceRecord[];
+
+    // Ensure all 12 users are present and have ministryRole
+    const hasRoles = parsed.every((r) => !!r.ministryRole);
+    if (!hasRoles || parsed.length < INITIAL_TEACHERS.length) {
+      const merged = INITIAL_TEACHERS.map((init) => {
+        const found = parsed.find(
+          (p) => p.userId === init.userId || p.id === init.id,
+        );
+        if (found) {
+          return {
+            ...init,
+            status: found.status ?? init.status,
+            signedInAt: found.signedInAt ?? init.signedInAt,
+            signedInBy: found.signedInBy ?? init.signedInBy,
+            signedOutAt: found.signedOutAt ?? init.signedOutAt,
+            signedOutBy: found.signedOutBy ?? init.signedOutBy,
+            notes: found.notes ?? init.notes,
+            serviceRole: found.serviceRole ?? init.serviceRole,
+            roomNumber: found.roomNumber ?? init.roomNumber,
+          };
+        }
+        return init;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+
+    return parsed;
   } catch {
     return INITIAL_TEACHERS;
   }
@@ -239,7 +355,7 @@ export function signInTeacher(
   const index = current.findIndex((item) => item.id === id);
 
   if (index === -1) {
-    return { success: false, error: "Teacher attendance record not found." };
+    return { success: false, error: "Staff attendance record not found." };
   }
 
   const existing = current[index];
@@ -275,7 +391,7 @@ export function signOutTeacher(
   const index = current.findIndex((item) => item.id === id);
 
   if (index === -1) {
-    return { success: false, error: "Teacher attendance record not found." };
+    return { success: false, error: "Staff attendance record not found." };
   }
 
   const existing = current[index];

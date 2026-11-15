@@ -17,6 +17,7 @@ import {
 import { PaginationFooter } from "@/components/pagination";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/cn";
+import type { Role } from "@/lib/navigation";
 import {
   batchSignInTeachers,
   signInTeacher,
@@ -50,7 +51,32 @@ const STATUS_META: Record<
   },
 };
 
+const ROLE_META: Record<
+  Role,
+  { label: string; badge: string; dot: string }
+> = {
+  Admin: {
+    label: "Admin",
+    badge: "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20",
+    dot: "bg-indigo-500",
+  },
+  Leader: {
+    label: "Leader",
+    badge: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20",
+    dot: "bg-emerald-500",
+  },
+  Teacher: {
+    label: "Teacher",
+    badge: "bg-amber-50 text-amber-700 ring-1 ring-amber-600/20",
+    dot: "bg-amber-500",
+  },
+};
+
 const SERVICE_ROLES: ServiceRole[] = [
+  "Ministry Director",
+  "Ministry Coordinator",
+  "Safety & Security",
+  "Check-in Lead",
   "Lead Teacher",
   "Assistant Teacher",
   "Substitute Teacher",
@@ -59,19 +85,24 @@ const SERVICE_ROLES: ServiceRole[] = [
 ];
 
 const ROOM_OPTIONS = [
-  { id: "all", label: "All Rooms & Classes" },
+  { id: "all", label: "All Rooms & Locations" },
   { id: "Room 101", label: "Room 101 · Little Lights (0–4)" },
   { id: "Room 102", label: "Room 102 · Kingdom Kids (5–8)" },
   { id: "Room 201", label: "Room 201 · Overcomers (9–12)" },
-  { id: "Auditorium", label: "Auditorium / Worship" },
-  { id: "Lower Hall", label: "Lower Hall / Teens" },
+  { id: "Auditorium", label: "Auditorium · Worship Hall" },
+  { id: "Main Foyer", label: "Main Foyer · Kiosks & Care" },
+  { id: "Directorate Office", label: "Directorate Office · Administration" },
+  { id: "Resource Center", label: "Resource Center · Curriculum" },
+  { id: "Facilities & Grounds", label: "Facilities & Grounds · Operations" },
+  { id: "Lower Hall", label: "Lower Hall · Teens Ministry" },
 ];
 
 export function TeacherAttendanceManagement() {
   const { user: currentUser } = useAuth();
-  const teachers = useTeacherAttendance();
+  const staffRecords = useTeacherAttendance();
 
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<Role | "all">("all");
   const [statusFilter, setStatusFilter] = useState<TeacherAttendanceStatus | "all">("all");
   const [roomFilter, setRoomFilter] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
@@ -91,47 +122,75 @@ export function TeacherAttendanceManagement() {
 
   // Reset page on filter change
   const [prevQuery, setPrevQuery] = useState(query);
+  const [prevRole, setPrevRole] = useState(roleFilter);
   const [prevStatus, setPrevStatus] = useState(statusFilter);
   const [prevRoom, setPrevRoom] = useState(roomFilter);
-  if (query !== prevQuery || statusFilter !== prevStatus || roomFilter !== prevRoom) {
+  if (
+    query !== prevQuery ||
+    roleFilter !== prevRole ||
+    statusFilter !== prevStatus ||
+    roomFilter !== prevRoom
+  ) {
     setPrevQuery(query);
+    setPrevRole(roleFilter);
     setPrevStatus(statusFilter);
     setPrevRoom(roomFilter);
     setCurrentPage(1);
   }
 
-  // Counts
+  // Counts & Role Breakdown
   const counts = useMemo(() => {
     let present = 0;
     let expected = 0;
     let signedOut = 0;
-    for (const t of teachers) {
-      if (t.status === "signed-in") present += 1;
-      else if (t.status === "expected") expected += 1;
-      else if (t.status === "signed-out") signedOut += 1;
+    let admins = 0;
+    let leaders = 0;
+    let teachers = 0;
+
+    for (const r of staffRecords) {
+      if (r.status === "signed-in") present += 1;
+      else if (r.status === "expected") expected += 1;
+      else if (r.status === "signed-out") signedOut += 1;
+
+      if (r.ministryRole === "Admin") admins += 1;
+      else if (r.ministryRole === "Leader") leaders += 1;
+      else if (r.ministryRole === "Teacher") teachers += 1;
     }
-    return { present, expected, signedOut, total: teachers.length };
-  }, [teachers]);
+    return {
+      present,
+      expected,
+      signedOut,
+      admins,
+      leaders,
+      teachers,
+      total: staffRecords.length,
+    };
+  }, [staffRecords]);
 
   // Filtered list
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return teachers.filter((t) => {
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
-      if (roomFilter !== "all" && !t.roomNumber.toLowerCase().includes(roomFilter.toLowerCase())) {
+    return staffRecords.filter((r) => {
+      if (roleFilter !== "all" && r.ministryRole !== roleFilter) return false;
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (
+        roomFilter !== "all" &&
+        !r.roomNumber.toLowerCase().includes(roomFilter.toLowerCase())
+      ) {
         return false;
       }
       if (!q) return true;
       return (
-        t.name.toLowerCase().includes(q) ||
-        t.email.toLowerCase().includes(q) ||
-        (t.phone ?? "").toLowerCase().includes(q) ||
-        t.assignedClass.toLowerCase().includes(q) ||
-        t.serviceRole.toLowerCase().includes(q) ||
-        t.roomNumber.toLowerCase().includes(q)
+        r.name.toLowerCase().includes(q) ||
+        r.email.toLowerCase().includes(q) ||
+        (r.phone ?? "").toLowerCase().includes(q) ||
+        r.assignedClass.toLowerCase().includes(q) ||
+        r.serviceRole.toLowerCase().includes(q) ||
+        r.roomNumber.toLowerCase().includes(q) ||
+        r.ministryRole.toLowerCase().includes(q)
       );
     });
-  }, [teachers, statusFilter, roomFilter, query]);
+  }, [staffRecords, roleFilter, statusFilter, roomFilter, query]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -151,18 +210,18 @@ export function TeacherAttendanceManagement() {
     if (res.success) {
       setFeedback({
         type: "success",
-        message: `${record.name} signed in successfully for ${record.assignedClass}.`,
+        message: `${record.name} (${record.ministryRole}) signed in successfully for ${record.assignedClass}.`,
       });
     }
   }
 
-  // Batch Sign In Expected Teachers
+  // Batch Sign In Expected Staff
   function handleBatchSignIn() {
-    const expectedIds = teachers.filter((t) => t.status === "expected").map((t) => t.id);
+    const expectedIds = staffRecords.filter((r) => r.status === "expected").map((r) => r.id);
     if (expectedIds.length === 0) {
       setFeedback({
         type: "error",
-        message: "All scheduled teachers are already signed in or have completed their shifts.",
+        message: "All scheduled staff and teachers are already signed in or have completed their shifts.",
       });
       return;
     }
@@ -171,7 +230,7 @@ export function TeacherAttendanceManagement() {
     const { count } = batchSignInTeachers(expectedIds, adminName);
     setFeedback({
       type: "success",
-      message: `Batch signed in ${count} expected teacher${count > 1 ? "s" : ""} on duty.`,
+      message: `Batch signed in ${count} expected staff member${count > 1 ? "s" : ""} on duty.`,
     });
   }
 
@@ -181,6 +240,24 @@ export function TeacherAttendanceManagement() {
     day: "numeric",
     year: "numeric",
   }).format(new Date());
+
+  const singularLabel =
+    roleFilter === "Teacher"
+      ? "teacher"
+      : roleFilter === "Leader"
+        ? "leader"
+        : roleFilter === "Admin"
+          ? "admin"
+          : "staff member";
+
+  const pluralLabel =
+    roleFilter === "Teacher"
+      ? "teachers"
+      : roleFilter === "Leader"
+        ? "leaders"
+        : roleFilter === "Admin"
+          ? "admins"
+          : "staff members";
 
   return (
     <div className="space-y-6">
@@ -192,13 +269,14 @@ export function TeacherAttendanceManagement() {
               Settings &amp; Administration
             </Link>
             <span>/</span>
-            <span className="text-slate-800">Teacher Attendance Kiosk</span>
+            <span className="text-slate-800">Staff Attendance Kiosk</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Teacher &amp; Staff Attendance
+            Staff, Leader &amp; Teacher Attendance
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-            Record teacher and volunteer arrival times, verify room ratios, track classroom roles, and log service departure shifts.
+            Record arrival times for all ministry personnel—including Teachers, Ministry Leaders, and
+            Church Administrators—verify room assignments, track service roles, and log shifts.
           </p>
         </div>
 
@@ -251,101 +329,84 @@ export function TeacherAttendanceManagement() {
         </div>
       )}
 
-      {/* KPI Metric Cards */}
+      {/* Attendance Metrics Cards */}
       <div className="grid grid-cols-2 gap-3.5 lg:grid-cols-4">
-        {/* On Duty */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs">
+        {/* Present on Duty */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <p className="text-xs font-semibold text-slate-600">On Duty Now</p>
-            </div>
-            <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800 ring-1 ring-emerald-600/20">
-              Active Shift
+            <span className="text-xs font-semibold text-slate-600">Present on Duty</span>
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
           </div>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-emerald-600 sm:text-3xl">
+          <p className="mt-2 text-2xl font-bold tabular-nums text-emerald-700 sm:text-3xl">
             {counts.present}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Teachers signed in</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {counts.total > 0
+              ? `${Math.round((counts.present / counts.total) * 100)}% of roster present`
+              : "No staff scheduled"}
+          </p>
         </div>
 
-        {/* Expected Arrivals */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs">
+        {/* Expected Arrival */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              <p className="text-xs font-semibold text-slate-600">Expected</p>
-            </div>
-            <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-600/20">
-              Awaiting
-            </span>
+            <span className="text-xs font-semibold text-slate-600">Expected Arrival</span>
+            <span className="h-2 w-2 rounded-full bg-amber-500" />
           </div>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-amber-600 sm:text-3xl">
+          <p className="mt-2 text-2xl font-bold tabular-nums text-amber-700 sm:text-3xl">
             {counts.expected}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Scheduled for today</p>
+          <p className="mt-1 text-xs text-slate-500">Pending arrival sign-in</p>
         </div>
 
         {/* Completed Shifts */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-violet-500" />
-              <p className="text-xs font-semibold text-slate-600">Signed Out</p>
-            </div>
-            <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-800 ring-1 ring-violet-600/20">
-              Shift Done
-            </span>
+            <span className="text-xs font-semibold text-slate-600">Completed Shifts</span>
+            <span className="h-2 w-2 rounded-full bg-violet-500" />
           </div>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-violet-600 sm:text-3xl">
+          <p className="mt-2 text-2xl font-bold tabular-nums text-violet-700 sm:text-3xl">
             {counts.signedOut}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Concluded service</p>
+          <p className="mt-1 text-xs text-slate-500">Signed out &amp; finished</p>
         </div>
 
         {/* Total Roster */}
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-2xs">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4.5 shadow-2xs">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-indigo-500" />
-              <p className="text-xs font-semibold text-slate-600">Total Staff</p>
-            </div>
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-              {todayFormatted}
-            </span>
+            <span className="text-xs font-semibold text-slate-600">Total Roster</span>
+            <span className="h-2 w-2 rounded-full bg-indigo-500" />
           </div>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-slate-900 sm:text-3xl">
+          <p className="mt-2 text-2xl font-bold tabular-nums text-indigo-700 sm:text-3xl">
             {counts.total}
           </p>
-          <p className="mt-1 text-xs text-slate-500">Scheduled roster</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {counts.teachers} Teachers · {counts.leaders} Leaders · {counts.admins} Admins
+          </p>
         </div>
       </div>
 
       {/* Main Section */}
       <section
-        aria-labelledby="teacher-attendance-roster-title"
-        className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs"
+        aria-label="Staff and Teacher Attendance Roster"
+        className="rounded-2xl border border-slate-200 bg-white shadow-2xs"
       >
+        {/* Controls Bar */}
         <div className="border-b border-slate-100 p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2
-                id="teacher-attendance-roster-title"
-                className="text-base font-bold tracking-tight text-slate-900"
-              >
-                Teacher Attendance Roster
+              <h2 className="text-base font-bold text-slate-900">
+                Staff Roster · {todayFormatted}
               </h2>
-              <p className="text-xs text-slate-500">
-                Showing <span className="font-semibold text-slate-800">{startEntry}–{endEntry}</span> of{" "}
-                <span className="font-semibold text-slate-800">{filtered.length}</span> teaching staff
+              <p className="mt-0.5 text-xs text-slate-500">
+                Live attendance for Teachers, Ministry Leaders, and Church Admins.
               </p>
             </div>
 
-            {/* View Mode Toggle */}
+            {/* Layout Toggle */}
             <div
               role="group"
               aria-label="View layout"
@@ -382,32 +443,32 @@ export function TeacherAttendanceManagement() {
             </div>
           </div>
 
-          {/* Search & Filters */}
-          <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search teacher by name, classroom, room number, or telephone..."
-                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 text-xs font-medium text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600"
-                >
-                  <CloseIcon className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </div>
+          {/* Search, Role Filters, Room Filters & Status Pills */}
+          <div className="mt-4 flex flex-col gap-3">
+            {/* Top row: Search input + Room dropdown */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search by name, role (Admin/Leader/Teacher), classroom, or phone..."
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-9 text-xs font-medium text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600"
+                  >
+                    <CloseIcon className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Room / Cohort Filter */}
-              <div className="relative">
+              {/* Room / Location Filter */}
+              <div className="relative shrink-0">
                 <select
                   value={roomFilter}
                   onChange={(e) => setRoomFilter(e.target.value)}
@@ -421,14 +482,90 @@ export function TeacherAttendanceManagement() {
                 </select>
                 <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               </div>
+            </div>
 
-              {/* Status Pills */}
+            {/* Bottom row: Role Tabs + Status Pills */}
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+              {/* Role Filter Tabs */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+                <span className="text-xs font-semibold text-slate-500 mr-1 hidden sm:inline">
+                  Role:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("all")}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors",
+                    roleFilter === "all"
+                      ? "bg-indigo-600 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <span>All Staff</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">
+                    {counts.total}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("Teacher")}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors",
+                    roleFilter === "Teacher"
+                      ? "bg-amber-600 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  <span>Teachers</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">
+                    {counts.teachers}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("Leader")}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors",
+                    roleFilter === "Leader"
+                      ? "bg-emerald-600 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  <span>Leaders</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">
+                    {counts.leaders}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRoleFilter("Admin")}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition-colors",
+                    roleFilter === "Admin"
+                      ? "bg-indigo-700 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                  )}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                  <span>Admins</span>
+                  <span className="rounded-full bg-black/10 px-1.5 py-0.2 text-[10px]">
+                    {counts.admins}
+                  </span>
+                </button>
+              </div>
+
+              {/* Status Filter Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                <span className="text-xs font-semibold text-slate-500 mr-1 hidden sm:inline">
+                  Status:
+                </span>
                 <button
                   type="button"
                   onClick={() => setStatusFilter("all")}
                   className={cn(
-                    "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors",
+                    "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
                     statusFilter === "all"
                       ? "bg-slate-900 text-white"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -443,7 +580,7 @@ export function TeacherAttendanceManagement() {
                   type="button"
                   onClick={() => setStatusFilter("signed-in")}
                   className={cn(
-                    "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors",
+                    "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
                     statusFilter === "signed-in"
                       ? "bg-emerald-600 text-white"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -458,7 +595,7 @@ export function TeacherAttendanceManagement() {
                   type="button"
                   onClick={() => setStatusFilter("expected")}
                   className={cn(
-                    "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors",
+                    "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
                     statusFilter === "expected"
                       ? "bg-amber-600 text-white"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -473,7 +610,7 @@ export function TeacherAttendanceManagement() {
                   type="button"
                   onClick={() => setStatusFilter("signed-out")}
                   className={cn(
-                    "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors",
+                    "inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-colors",
                     statusFilter === "signed-out"
                       ? "bg-violet-600 text-white"
                       : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
@@ -495,15 +632,16 @@ export function TeacherAttendanceManagement() {
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
               <SearchIcon className="h-6 w-6" />
             </span>
-            <p className="text-sm font-semibold text-slate-900">No teachers found</p>
+            <p className="text-sm font-semibold text-slate-900">No staff members found</p>
             <p className="max-w-sm text-xs leading-5 text-slate-500">
-              Try adjusting your classroom filter, search keyword, or clear active filters.
+              Try adjusting your role filter, classroom/room location, or search keyword.
             </p>
-            {(query || statusFilter !== "all" || roomFilter !== "all") && (
+            {(query || roleFilter !== "all" || statusFilter !== "all" || roomFilter !== "all") && (
               <button
                 type="button"
                 onClick={() => {
                   setQuery("");
+                  setRoleFilter("all");
                   setStatusFilter("all");
                   setRoomFilter("all");
                 }}
@@ -527,26 +665,29 @@ export function TeacherAttendanceManagement() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] border-collapse text-left">
+            <table className="w-full min-w-[820px] border-collapse text-left">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80">
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
-                    Teacher
+                    Staff Member
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
+                    Role
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
                     Status
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
-                    Assigned Classroom
+                    Room / Assignment
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
                     Service Role
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
-                    Arrival Time
+                    Arrival
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold text-slate-700">
-                    Departure Time
+                    Departure
                   </th>
                   <th scope="col" className="px-4 py-3 text-right text-xs font-semibold text-slate-700">
                     Action
@@ -556,6 +697,7 @@ export function TeacherAttendanceManagement() {
               <tbody className="divide-y divide-slate-100">
                 {paginated.map((teacher) => {
                   const meta = STATUS_META[teacher.status];
+                  const roleMeta = ROLE_META[teacher.ministryRole];
                   return (
                     <tr key={teacher.id} className="transition-colors hover:bg-slate-50/70">
                       <td className="whitespace-nowrap px-4 py-3.5">
@@ -570,6 +712,17 @@ export function TeacherAttendanceManagement() {
                             </p>
                           </div>
                         </div>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3.5">
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                            roleMeta.badge,
+                          )}
+                        >
+                          <span className={cn("h-1.5 w-1.5 rounded-full", roleMeta.dot)} />
+                          {roleMeta.label}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3.5">
                         <span
@@ -674,12 +827,12 @@ export function TeacherAttendanceManagement() {
             startEntry={startEntry}
             endEntry={endEntry}
             totalEntries={filtered.length}
-            singularLabel="teacher"
-            pluralLabel="teachers"
+            singularLabel={singularLabel}
+            pluralLabel={pluralLabel}
             currentPage={safePage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
-            ariaLabel="Teacher attendance pagination"
+            ariaLabel="Staff attendance pagination"
           />
         )}
       </section>
@@ -714,7 +867,7 @@ export function TeacherAttendanceManagement() {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Teacher Card Component
+// Staff / Teacher Card Component
 // -------------------------------------------------------------------------------------------------
 function TeacherCard({
   record,
@@ -728,6 +881,7 @@ function TeacherCard({
   onOpenSignOutModal: () => void;
 }) {
   const meta = STATUS_META[record.status];
+  const roleMeta = ROLE_META[record.ministryRole];
 
   return (
     <article
@@ -744,7 +898,17 @@ function TeacherCard({
             {record.avatarInitials}
           </span>
           <div className="min-w-0">
-            <h3 className="truncate text-sm font-bold text-slate-900">{record.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-sm font-bold text-slate-900">{record.name}</h3>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                  roleMeta.badge,
+                )}
+              >
+                {roleMeta.label}
+              </span>
+            </div>
             <p className="truncate text-xs text-slate-500">
               {record.roomNumber} · {record.assignedClass}
             </p>
@@ -833,9 +997,9 @@ function TeacherCard({
           <button
             type="button"
             onClick={onOpenSignInModal}
-            className="flex h-9 flex-1 items-center justify-center rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50"
           >
-            Re-assign Room
+            <span>Re-open Shift</span>
           </button>
         )}
       </div>
@@ -870,7 +1034,7 @@ function SignInModal({
       adminName,
     });
     if (res.success) {
-      onSuccess(`Signed in ${record.name} to ${roomNumber} as ${serviceRole}.`);
+      onSuccess(`Signed in ${record.name} (${record.ministryRole}) to ${roomNumber} as ${serviceRole}.`);
     }
   }
 
@@ -885,9 +1049,11 @@ function SignInModal({
         <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
           <div>
             <h3 id="signin-modal-title" className="text-base font-bold text-slate-900">
-              Sign In Teacher
+              Sign In Staff Member
             </h3>
-            <p className="text-xs text-slate-500">{record.name} · Check-in Verification</p>
+            <p className="text-xs text-slate-500">
+              {record.name} · {record.ministryRole} · Check-in Verification
+            </p>
           </div>
           <button
             type="button"
@@ -909,11 +1075,11 @@ function SignInModal({
                 onChange={(e) => setRoomNumber(e.target.value)}
                 className="h-10 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 pr-8 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
               >
-                <option value="Room 101">Room 101 · Little Lights (Ages 0–4)</option>
-                <option value="Room 102">Room 102 · Kingdom Kids (Ages 5–8)</option>
-                <option value="Room 201">Room 201 · Overcomers (Ages 9–12)</option>
-                <option value="Auditorium">Auditorium · Praise &amp; Worship</option>
-                <option value="Lower Hall">Lower Hall · Teens Ministry</option>
+                {ROOM_OPTIONS.filter((o) => o.id !== "all").map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
               <ChevronDownIcon className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
@@ -947,7 +1113,7 @@ function SignInModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Prepared craft materials, covering for sister"
+              placeholder="e.g. Prepared craft materials, covering shift"
               className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
@@ -993,7 +1159,7 @@ function SignOutModal({
     e.preventDefault();
     const res = signOutTeacher(record.id, { notes, adminName });
     if (res.success) {
-      onSuccess(`Signed out ${record.name}. Shift marked complete.`);
+      onSuccess(`Signed out ${record.name} (${record.ministryRole}). Shift marked complete.`);
     }
   }
 
@@ -1008,7 +1174,7 @@ function SignOutModal({
         <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
           <div>
             <h3 id="signout-modal-title" className="text-base font-bold text-slate-900">
-              Sign Out Teacher
+              Sign Out Staff Member
             </h3>
             <p className="text-xs text-slate-500">Record departure and conclude shift</p>
           </div>
@@ -1023,7 +1189,9 @@ function SignOutModal({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-xs">
-            <p className="font-semibold text-slate-800">{record.name}</p>
+            <p className="font-semibold text-slate-800">
+              {record.name} · {record.ministryRole}
+            </p>
             <p className="text-slate-500 mt-0.5">
               {record.roomNumber} ({record.assignedClass}) · {record.serviceRole}
             </p>
@@ -1040,7 +1208,7 @@ function SignOutModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. All children safely checked out, room tidied"
+              placeholder="e.g. Completed shifts, room tidied, briefing held"
               className="mt-1.5 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-medium text-slate-900 outline-none focus:border-indigo-500 focus:bg-white focus:ring-2 focus:ring-indigo-500/20"
             />
           </div>
